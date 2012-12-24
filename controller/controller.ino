@@ -74,15 +74,19 @@ void loop() {
     currentTime = micros();
     
     // Read data (not faster then every 1 ms)
+    // Reading gyro and accel via i2c (consists of 12 bytes) takes about 1715us to complete (terrible)
     // This is as fast as we can go on standard i2c bus (we could go much faster on SPI)
     if (currentTime - sensorPreviousTime >= 1000) {
+        //unsigned long test_start = micros();
+        
         mpu.readGyroRaw();
+        mpu.readAccelRaw(); 
+        
+        //Serial.println(micros() - test_start);
         
         gyroXsumRate = gyroXmaf.update(gyroX);
         gyroYsumRate = gyroYmaf.update(gyroY);
         gyroZsumRate = gyroZmaf.update(gyroZ);
-        
-        mpu.readAccelRaw(); 
 
         accelXsumAvr = accelXmaf.update(accelX);
         accelYsumAvr = accelYmaf.update(accelY);
