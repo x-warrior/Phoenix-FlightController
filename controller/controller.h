@@ -3,7 +3,7 @@ unsigned long currentTime = 0;
 unsigned long previousTime = 0;
 unsigned long sensorPreviousTime = 0;
 uint8_t frameCounter = 0;
-uint8_t itterations = 0;
+uint32_t itterations = 0;
 
 bool all_ready = false;
 bool armed = false;
@@ -33,5 +33,5 @@ double kinematicsAngleZ = 0.0;
 //#define KINEMATICS_GRAPH
 //#define SENSOR_DATA
 //#define SENSOR_DATA_RAW
-//#define DISPLAY_ITTERATIONS
+#define DISPLAY_ITTERATIONS
 //#define DISABLE_BATTERY_ALARM

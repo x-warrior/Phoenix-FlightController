@@ -77,12 +77,11 @@ void loop() {
     // Reading gyro and accel via i2c (consists of 12 bytes) takes about 1715us to complete (terrible)
     // This is as fast as we can go on standard i2c bus (we could go much faster on SPI)
     if (currentTime - sensorPreviousTime >= 1000) {
-        //unsigned long test_start = micros();
+        unsigned long test_start = micros();
         
         mpu.readGyroRaw();
         mpu.readAccelRaw(); 
         
-        //Serial.println(micros() - test_start);
         
         gyroXsumRate = gyroXmaf.update(gyroX);
         gyroYsumRate = gyroYmaf.update(gyroY);
@@ -97,43 +96,8 @@ void loop() {
         
         kinematics_update(&accelXsumAvr, &accelYsumAvr, &accelZsumAvr, &gyroXsumRate, &gyroYsumRate, &gyroZsumRate);
 
-        if (flightMode == ATTITUDE_MODE) {
-            // Compute command PIDs (with kinematics correction)
-            yaw_command_pid.Compute();
-            pitch_command_pid.Compute();
-            roll_command_pid.Compute();
-            
-            // Compute motor PIDs (rate)    
-            yaw_motor_pid.Compute();
-            pitch_motor_pid.Compute();
-            roll_motor_pid.Compute();   
-        } else if (flightMode == RATE_MODE) {
-            // * 4.0 is the rotation speed factor
-            YawCommandPIDSpeed = commandYaw * 4.0;
-            PitchCommandPIDSpeed = commandPitch * 4.0;
-            RollCommandPIDSpeed = commandRoll * 4.0;
-            
-            // Compute motor PIDs (rate)    
-            yaw_motor_pid.Compute();
-            pitch_motor_pid.Compute();
-            roll_motor_pid.Compute();         
-        }   
-        
-        if (armed) {               
-            MotorOut[0] = constrain(TX_throttle + PitchMotorSpeed + RollMotorSpeed + YawMotorSpeed, 1000, 2000);
-            MotorOut[1] = constrain(TX_throttle + PitchMotorSpeed - RollMotorSpeed - YawMotorSpeed, 1000, 2000);
-            MotorOut[2] = constrain(TX_throttle - PitchMotorSpeed - RollMotorSpeed + YawMotorSpeed, 1000, 2000);
-            MotorOut[3] = constrain(TX_throttle - PitchMotorSpeed + RollMotorSpeed - YawMotorSpeed, 1000, 2000);
-
-            updateMotors();
-        } else {
-            MotorOut[0] = 1000;
-            MotorOut[1] = 1000;
-            MotorOut[2] = 1000;
-            MotorOut[3] = 1000;
-            
-            updateMotors();
-        } 
+        // 781 us
+        // Serial.println(micros() - test_start);
         
         sensorPreviousTime = currentTime;
     }    
@@ -167,7 +131,49 @@ void loop() {
     }
 }
 
-void process100HzTask() {         
+void process400HzTask() {
+    if (flightMode == ATTITUDE_MODE) {
+        // Compute command PIDs (with kinematics correction)
+        yaw_command_pid.Compute();
+        pitch_command_pid.Compute();
+        roll_command_pid.Compute();
+        
+        // Compute motor PIDs (rate)    
+        yaw_motor_pid.Compute();
+        pitch_motor_pid.Compute();
+        roll_motor_pid.Compute();   
+    } else if (flightMode == RATE_MODE) {
+        // * 4.0 is the rotation speed factor
+        YawCommandPIDSpeed = commandYaw * 4.0;
+        PitchCommandPIDSpeed = commandPitch * 4.0;
+        RollCommandPIDSpeed = commandRoll * 4.0;
+        
+        // Compute motor PIDs (rate)    
+        yaw_motor_pid.Compute();
+        pitch_motor_pid.Compute();
+        roll_motor_pid.Compute();         
+    }   
+    
+    if (armed) {               
+        MotorOut[0] = constrain(TX_throttle + PitchMotorSpeed + RollMotorSpeed + YawMotorSpeed, 1000, 2000);
+        MotorOut[1] = constrain(TX_throttle + PitchMotorSpeed - RollMotorSpeed - YawMotorSpeed, 1000, 2000);
+        MotorOut[2] = constrain(TX_throttle - PitchMotorSpeed - RollMotorSpeed + YawMotorSpeed, 1000, 2000);
+        MotorOut[3] = constrain(TX_throttle - PitchMotorSpeed + RollMotorSpeed - YawMotorSpeed, 1000, 2000);
+
+        updateMotors();
+    } else {
+        MotorOut[0] = 1000;
+        MotorOut[1] = 1000;
+        MotorOut[2] = 1000;
+        MotorOut[3] = 1000;
+        
+        updateMotors();
+    } 
+}
+
+void process100HzTask() { 
+    // temporary
+    process400HzTask();
 }
 
 void process50HzTask() {
