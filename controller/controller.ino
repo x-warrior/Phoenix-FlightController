@@ -9,9 +9,19 @@
 #include "PID.h"
 #include "esc.h"
 
+#include "MAF.h"
 //#include "kinematics_ARG.h"
 #include "kinematics_CMP.h"
 #include "mpu6050.h"
+
+// MAF definitions
+MAF gyroXmaf(4);
+MAF gyroYmaf(4);
+MAF gyroZmaf(4);
+
+MAF accelXmaf(4);
+MAF accelYmaf(4);
+MAF accelZmaf(4);
 
 // MPU definitions
 MPU6050 mpu;
@@ -66,24 +76,60 @@ void loop() {
     // Read data (not faster then every 1 ms)
     // This is as fast as we can go on standard i2c bus (we could go much faster on SPI)
     if (currentTime - sensorPreviousTime >= 1000) {
-        mpu.readGyroSum();
-        mpu.readAccelSum();        
+        mpu.readGyroRaw();
         
-        #ifdef SENSOR_DATA_RAW
-            Serial.print(accelX);
-            Serial.write('\t');    
-            Serial.print(accelY);
-            Serial.write('\t');   
-            Serial.print(accelZ);
-            Serial.write('\t');   
-            Serial.print(gyroX);
-            Serial.write('\t');   
-            Serial.print(gyroY);
-            Serial.write('\t');   
-            Serial.print(gyroZ);
-            Serial.write('\t');  
-            Serial.println(); 
-        #endif
+        gyroXsumRate = gyroXmaf.update(gyroX);
+        gyroYsumRate = gyroYmaf.update(gyroY);
+        gyroZsumRate = gyroZmaf.update(gyroZ);
+        
+        mpu.readAccelRaw(); 
+
+        accelXsumAvr = accelXmaf.update(accelX);
+        accelYsumAvr = accelYmaf.update(accelY);
+        accelZsumAvr = accelZmaf.update(accelZ);        
+        
+        mpu.evaluateGyro();
+        mpu.evaluateAccel();        
+        
+        kinematics_update(&accelXsumAvr, &accelYsumAvr, &accelZsumAvr, &gyroXsumRate, &gyroYsumRate, &gyroZsumRate);
+
+        if (flightMode == ATTITUDE_MODE) {
+            // Compute command PIDs (with kinematics correction)
+            yaw_command_pid.Compute();
+            pitch_command_pid.Compute();
+            roll_command_pid.Compute();
+            
+            // Compute motor PIDs (rate)    
+            yaw_motor_pid.Compute();
+            pitch_motor_pid.Compute();
+            roll_motor_pid.Compute();   
+        } else if (flightMode == RATE_MODE) {
+            // * 4.0 is the rotation speed factor
+            YawCommandPIDSpeed = commandYaw * 4.0;
+            PitchCommandPIDSpeed = commandPitch * 4.0;
+            RollCommandPIDSpeed = commandRoll * 4.0;
+            
+            // Compute motor PIDs (rate)    
+            yaw_motor_pid.Compute();
+            pitch_motor_pid.Compute();
+            roll_motor_pid.Compute();         
+        }   
+        
+        if (armed) {               
+            MotorOut[0] = constrain(TX_throttle + PitchMotorSpeed + RollMotorSpeed + YawMotorSpeed, 1000, 2000);
+            MotorOut[1] = constrain(TX_throttle + PitchMotorSpeed - RollMotorSpeed - YawMotorSpeed, 1000, 2000);
+            MotorOut[2] = constrain(TX_throttle - PitchMotorSpeed - RollMotorSpeed + YawMotorSpeed, 1000, 2000);
+            MotorOut[3] = constrain(TX_throttle - PitchMotorSpeed + RollMotorSpeed - YawMotorSpeed, 1000, 2000);
+
+            updateMotors();
+        } else {
+            MotorOut[0] = 1000;
+            MotorOut[1] = 1000;
+            MotorOut[2] = 1000;
+            MotorOut[3] = 1000;
+            
+            updateMotors();
+        } 
         
         sensorPreviousTime = currentTime;
     }    
@@ -117,66 +163,7 @@ void loop() {
     }
 }
 
-void process100HzTask() {    
-    mpu.evaluateGyro();
-    mpu.evaluateAccel();
-
-    #ifdef SENSOR_DATA
-        Serial.print(accelXsumAvr);
-        Serial.write('\t');    
-        Serial.print(accelYsumAvr);
-        Serial.write('\t');   
-        Serial.print(accelZsumAvr);
-        Serial.write('\t');   
-        Serial.print(gyroXsumRate);
-        Serial.write('\t');   
-        Serial.print(gyroYsumRate);
-        Serial.write('\t');   
-        Serial.print(gyroZsumRate);
-        Serial.write('\t');  
-        Serial.println();          
-    #endif    
-    
-    // Update kinematics with latest data
-    kinematics_update(&accelXsumAvr, &accelYsumAvr, &accelZsumAvr, &gyroXsumRate, &gyroYsumRate, &gyroZsumRate);
-    
-    if (flightMode == ATTITUDE_MODE) {
-        // Compute command PIDs (with kinematics correction)
-        yaw_command_pid.Compute();
-        pitch_command_pid.Compute();
-        roll_command_pid.Compute();
-        
-        // Compute motor PIDs (rate)    
-        yaw_motor_pid.Compute();
-        pitch_motor_pid.Compute();
-        roll_motor_pid.Compute();   
-    } else if (flightMode == RATE_MODE) {
-        // * 4.0 is the rotation speed factor
-        YawCommandPIDSpeed = commandYaw * 4.0;
-        PitchCommandPIDSpeed = commandPitch * 4.0;
-        RollCommandPIDSpeed = commandRoll * 4.0;
-        
-        // Compute motor PIDs (rate)    
-        yaw_motor_pid.Compute();
-        pitch_motor_pid.Compute();
-        roll_motor_pid.Compute();         
-    }   
-    
-    if (armed) {               
-        MotorOut[0] = constrain(TX_throttle + PitchMotorSpeed + RollMotorSpeed + YawMotorSpeed, 1000, 2000);
-        MotorOut[1] = constrain(TX_throttle + PitchMotorSpeed - RollMotorSpeed - YawMotorSpeed, 1000, 2000);
-        MotorOut[2] = constrain(TX_throttle - PitchMotorSpeed - RollMotorSpeed + YawMotorSpeed, 1000, 2000);
-        MotorOut[3] = constrain(TX_throttle - PitchMotorSpeed + RollMotorSpeed - YawMotorSpeed, 1000, 2000);
-
-        updateMotors();
-    } else {
-        MotorOut[0] = 1000;
-        MotorOut[1] = 1000;
-        MotorOut[2] = 1000;
-        MotorOut[3] = 1000;
-        
-        updateMotors();
-    } 
+void process100HzTask() {         
 }
 
 void process50HzTask() {

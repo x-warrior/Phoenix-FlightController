@@ -69,6 +69,9 @@ double accelXsum, accelYsum, accelZsum;
 double gyroXsumRate, gyroYsumRate, gyroZsumRate;
 double accelXsumAvr, accelYsumAvr, accelZsumAvr;
 
+//double gyroXmaf, gyroYmaf, gyroZmaf;
+//double accelXmaf, accelYmaf, accelZmaf;
+
 uint8_t gyroSamples = 0;
 uint8_t accelSamples = 0;
 
@@ -188,11 +191,8 @@ class MPU6050 {
             accelSamples++;
         };
         
-        void evaluateGyro() {
-            // Calculate average
-            gyroXsumRate = gyroXsum / gyroSamples;
-            gyroYsumRate = -(gyroYsum / gyroSamples);
-            gyroZsumRate = gyroZsum / gyroSamples;  
+        void evaluateGyro() {            
+            gyroYsumRate = -gyroYsumRate; // reverse gyro Y
             
             // Apply offsets
             gyroXsumRate += gyro_offset[0];
@@ -203,20 +203,9 @@ class MPU6050 {
             gyroXsumRate *= gyroScaleFactor;
             gyroYsumRate *= gyroScaleFactor;
             gyroZsumRate *= gyroScaleFactor;
-            
-            // Reset SUM variables
-            gyroXsum = 0;
-            gyroYsum = 0;
-            gyroZsum = 0;
-            gyroSamples = 0;
         };
         
-        void evaluateAccel() {
-            // Calculate average
-            accelXsumAvr = accelXsum / accelSamples;
-            accelYsumAvr = accelYsum / accelSamples;
-            accelZsumAvr = accelZsum / accelSamples;  
-            
+        void evaluateAccel() {            
             // Apply offsets
             accelXsumAvr += accel_bias[0];
             accelYsumAvr += accel_bias[1];
@@ -226,12 +215,6 @@ class MPU6050 {
             accelXsumAvr *= accelScaleFactor;
             accelYsumAvr *= accelScaleFactor;
             accelZsumAvr *= accelScaleFactor;
-            
-            // Reset SUM variables
-            accelXsum = 0;
-            accelYsum = 0;
-            accelZsum = 0;
-            accelSamples = 0;
         };
         
         void readGyroCalibrated() {
