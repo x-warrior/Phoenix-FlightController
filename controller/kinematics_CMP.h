@@ -37,7 +37,7 @@ void kinematics_update(double* accelX, double* accelY, double* accelZ, double* g
     
     // Fuse in gyroscope
     kinematicsAngleX = kinematicsAngleX + (*gyroX * (double)(now - kinematics_timer) / 1000000);
-    kinematicsAngleY = kinematicsAngleY + (((kinematicsAngleX > HALF_PI || kinematicsAngleX < -HALF_PI) ? -1 : 1) * *gyroY * (double)(now - kinematics_timer) / 1000000);
+    kinematicsAngleY = kinematicsAngleY + (((kinematicsAngleX > HALF_PI || kinematicsAngleX < -HALF_PI) ? -1 : 1) * (*gyroY * (double)(now - kinematics_timer) / 1000000));
     kinematicsAngleZ = kinematicsAngleZ + (*gyroZ * (double)(now - kinematics_timer) / 1000000);  
     
     // Normalize gyro kinematics (+ - PI)    
