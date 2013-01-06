@@ -25,8 +25,8 @@ void kinematics_update(double* accelX, double* accelY, double* accelZ, double* g
     if (*accelZ < 0.00) orientation = false; // up-side DOWN    
     
     double accelXangle = atan2(*accelY, *accelZ);
-    double accelYangle = atan2(*accelX, *accelZ); 
-    //double accelYangle = atan2(*accelX, sqrt(*accelY * *accelY + *accelZ * *accelZ));   
+    //double accelYangle = atan2(*accelX, *accelZ); 
+    double accelYangle = atan(*accelX /sqrt(*accelY * *accelY + *accelZ * *accelZ));   
     
     // Accelerometer cut-off
     double accelWeight = 0.0025; // normal operation
@@ -37,15 +37,22 @@ void kinematics_update(double* accelX, double* accelY, double* accelZ, double* g
     
     // Fuse in gyroscope
     kinematicsAngleX = kinematicsAngleX + (*gyroX * (double)(now - kinematics_timer) / 1000000);
-    kinematicsAngleY = kinematicsAngleY + (*gyroY * (double)(now - kinematics_timer) / 1000000);
+    kinematicsAngleY = kinematicsAngleY + (((kinematicsAngleX > HALF_PI || kinematicsAngleX < -HALF_PI) ? -1 : 1) * *gyroY * (double)(now - kinematics_timer) / 1000000);
     kinematicsAngleZ = kinematicsAngleZ + (*gyroZ * (double)(now - kinematics_timer) / 1000000);  
     
-    // Normalize gyro kinematics (+ - PI)
-    if (kinematicsAngleX > PI) kinematicsAngleX -= TWO_PI;
-    else if (kinematicsAngleX < -PI) kinematicsAngleX += TWO_PI;    
+    // Normalize gyro kinematics (+ - PI)    
+    if (kinematicsAngleY > PI) {
+        kinematicsAngleY = TWO_PI - kinematicsAngleY;
+        kinematicsAngleX += PI;
+        kinematicsAngleZ += PI;
+    } else if (kinematicsAngleY < -PI) {
+        kinematicsAngleY = -TWO_PI - kinematicsAngleY;
+        kinematicsAngleX += PI;
+        kinematicsAngleZ += PI;
+    }    
     
-    if (kinematicsAngleY > PI) kinematicsAngleY -= TWO_PI;
-    else if (kinematicsAngleY < -PI) kinematicsAngleY += TWO_PI;
+    if (kinematicsAngleX > PI) kinematicsAngleX -= TWO_PI;
+    else if (kinematicsAngleX < -PI) kinematicsAngleX += TWO_PI;        
     
     // While normalizing Z angle, attitudeYaw (angle desired by user) is also normalized
     // attitudeYaw variable was added to handle clean normalization of angles while still
@@ -62,6 +69,7 @@ void kinematics_update(double* accelX, double* accelY, double* accelZ, double* g
     // This is second order accelerometer cut off, which restricts accel data fusion in only
     // "up-side UP" angle estimation and restricts it further to avoid incorrect accelerometer
     // data correction.
+    /*
     if (*accelZ > 0.75) {
         if ((kinematicsAngleX - accelXangle) > PI) {
             kinematicsAngleX = (1.00 - accelWeight) * kinematicsAngleX + accelWeight * (accelXangle + TWO_PI);
@@ -81,6 +89,8 @@ void kinematics_update(double* accelX, double* accelY, double* accelZ, double* g
             kinematicsAngleY = (1.00 - accelWeight) * kinematicsAngleY + accelWeight * accelYangle;
         } 
     }
+    */
+    
     // Saves time for next comparison
     kinematics_timer = now;
 }
