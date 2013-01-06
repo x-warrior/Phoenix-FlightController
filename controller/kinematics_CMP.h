@@ -69,27 +69,21 @@ void kinematics_update(double* accelX, double* accelY, double* accelZ, double* g
     // This is second order accelerometer cut off, which restricts accel data fusion in only
     // "up-side UP" angle estimation and restricts it further to avoid incorrect accelerometer
     // data correction.
-    /*
-    if (*accelZ > 0.75) {
-        if ((kinematicsAngleX - accelXangle) > PI) {
-            kinematicsAngleX = (1.00 - accelWeight) * kinematicsAngleX + accelWeight * (accelXangle + TWO_PI);
-        } else if ((kinematicsAngleX - accelXangle) < -PI) {
-            kinematicsAngleX = (1.00 - accelWeight) * kinematicsAngleX + accelWeight * (accelXangle - TWO_PI);
-        } else {
-            kinematicsAngleX = (1.00 - accelWeight) * kinematicsAngleX + accelWeight * accelXangle;
-        }
+    if ((kinematicsAngleX - accelXangle) > PI) {
+        kinematicsAngleX = (1.00 - accelWeight) * kinematicsAngleX + accelWeight * (accelXangle + TWO_PI);
+    } else if ((kinematicsAngleX - accelXangle) < -PI) {
+        kinematicsAngleX = (1.00 - accelWeight) * kinematicsAngleX + accelWeight * (accelXangle - TWO_PI);
+    } else {
+        kinematicsAngleX = (1.00 - accelWeight) * kinematicsAngleX + accelWeight * accelXangle;
     }
     
-    if (*accelZ > 0.60) {
-        if ((kinematicsAngleY - accelYangle) > PI) {
-            kinematicsAngleY = (1.00 - accelWeight) * kinematicsAngleY + accelWeight * (accelYangle + TWO_PI);
-        } else if ((kinematicsAngleY - accelYangle) < -PI) {
-            kinematicsAngleY = (1.00 - accelWeight) * kinematicsAngleY + accelWeight * (accelYangle - TWO_PI);
-        } else {
-            kinematicsAngleY = (1.00 - accelWeight) * kinematicsAngleY + accelWeight * accelYangle;
-        } 
-    }
-    */
+    if ((kinematicsAngleY - accelYangle) > HALF_PI) {
+        kinematicsAngleY = (1.00 - accelWeight) * kinematicsAngleY + accelWeight * (accelYangle + PI);
+    } else if ((kinematicsAngleY - accelYangle) < -HALF_PI) {
+        kinematicsAngleY = (1.00 - accelWeight) * kinematicsAngleY + accelWeight * (accelYangle - PI);
+    } else {
+        kinematicsAngleY = (1.00 - accelWeight) * kinematicsAngleY + accelWeight * accelYangle;
+    } 
     
     // Saves time for next comparison
     kinematics_timer = now;
