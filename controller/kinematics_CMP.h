@@ -29,16 +29,19 @@ void kinematics_update(double* accelX, double* accelY, double* accelZ, double* g
     double accelYangle = atan(*accelX /sqrt(*accelY * *accelY + *accelZ * *accelZ));   
     
     // Accelerometer cut-off
-    double accelWeight = 0.0025; // normal operation
+    double accelWeight = 0.00; // 0.0025; // normal operation
     if (norm > 13.0 || norm < 7.0) accelWeight = 0.00; // gyro only
     
     // Save current time into variable for better computation time
     unsigned long now = micros();    
     
     // Fuse in gyroscope
+    double realGyroZ = cos(accelXangle) * *gyroZ + sin(accelXangle) * *gyroY;
+    double realGyroY = cos(accelXangle) * *gyroY + sin(accelXangle) * *gyroZ;
+    
     kinematicsAngleX = kinematicsAngleX + (*gyroX * (double)(now - kinematics_timer) / 1000000);
-    kinematicsAngleY = kinematicsAngleY + (((kinematicsAngleX > HALF_PI || kinematicsAngleX < -HALF_PI) ? -1.0 : 1.0) * (*gyroY * (double)(now - kinematics_timer) / 1000000));
-    kinematicsAngleZ = kinematicsAngleZ + (*gyroZ * (double)(now - kinematics_timer) / 1000000);  
+    kinematicsAngleY = kinematicsAngleY + (realGyroY * (double)(now - kinematics_timer) / 1000000);
+    kinematicsAngleZ = kinematicsAngleZ + (realGyroZ * (double)(now - kinematics_timer) / 1000000);  
     
     // Normalize gyro kinematics (+ - PI)    
     if (kinematicsAngleY > PI) {
@@ -73,6 +76,7 @@ void kinematics_update(double* accelX, double* accelY, double* accelZ, double* g
     // This is second order accelerometer cut off, which restricts accel data fusion in only
     // "up-side UP" angle estimation and restricts it further to avoid incorrect accelerometer
     // data correction.
+    /*
     if ((kinematicsAngleX - accelXangle) > PI) {
         kinematicsAngleX = (1.00 - accelWeight) * kinematicsAngleX + accelWeight * (accelXangle + TWO_PI);
     } else if ((kinematicsAngleX - accelXangle) < -PI) {
@@ -88,6 +92,7 @@ void kinematics_update(double* accelX, double* accelY, double* accelZ, double* g
     } else {
         kinematicsAngleY = (1.00 - accelWeight) * kinematicsAngleY + accelWeight * accelYangle;
     } 
+    */
     
     // Saves time for next comparison
     kinematics_timer = now;
