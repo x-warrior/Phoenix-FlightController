@@ -1,0 +1,201 @@
+* {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    list-style: none;
+}
+body {
+    font-family: sans-serif;
+    font-size: 12px;
+    color: #303030;
+    -webkit-text-size-adjust: 100%;
+    background-color: #dfddd0;
+}
+a {
+    color: #303030;
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+.clear-both {
+    clear: both;
+}
+.left {
+    float: left;
+}
+.right {
+    float: right;
+}
+#main-wrapper {
+    width: 940px;
+    margin: 10px auto 0 auto;
+    
+    padding: 0 10px 0 10px;
+}
+#port-picker {
+    float: left;
+}
+    #port-picker dl {
+        float: left;
+        width: 150px;
+    }
+    #port-picker dt {
+        float: left;
+        
+        width: 100px;
+        height: 25px;
+    }
+    #port-picker dd {
+        margin-left: 100px;
+        height: 25px;
+    }
+    #port-picker select {
+        width: 90px;
+        height: 20px;
+        line-height: 20px;
+        
+        float: left;
+        margin-right: 10px;
+        
+        border: 1px solid silver;
+    }
+    #port-picker input {
+        width: 88px;
+        height: 20px;
+        line-height: 20px;
+        
+        float: left;
+        margin-right: 10px;
+        
+        border: 1px solid silver;        
+    }
+    #port-picker a {
+        display: block;
+        
+        width: 80px;
+        height: 18px;
+        border: 1px solid silver;
+        
+        line-height: 18px;
+        text-align: center;
+    }
+    #port-picker a.refresh {
+        background-color: #5569d0;
+        color: white;
+    }
+        #port-picker a.refresh:hover {
+            text-decoration: none;
+            background-color: #424d84;
+        }
+    #port-picker a.connect {
+        margin-top: 5px;
+        background-color: #be2222;
+        color: white;
+    }
+        #port-picker a.connect:hover {
+            text-decoration: none;
+            background-color: #ea3131;
+        }
+    #port-picker a.connect.active {
+        background-color: #0fab16;
+    }
+        #port-picker a.connect.active:hover {
+            background-color: #13d81d;
+        }       
+        
+#command-log {
+    float: right;
+    
+    width: 680px;
+    height: 60px;
+    
+    border: 1px solid silver;
+    
+    background-color: white;
+    
+    overflow: auto;
+} 
+    #command-log .wrapper {
+        padding: 5px;
+    }
+#tabs {
+    position: absolute;
+    margin-top: 1px;
+}
+    #tabs li {
+        float: left;
+        border: 1px solid #848484;
+        border-right: 0;
+    }
+        #tabs li.first {
+        }
+        #tabs li.last {
+            border-right: 1px solid #848484;
+        }
+        #tabs li.active {
+            border-bottom: 1px solid white;
+        }
+            #tabs li.active a {
+                background-color: white;            
+            }
+            #tabs li.active a:hover {
+                background-color: white;
+                cursor: default;
+            }
+        #tabs li a {
+            padding: 5px;
+            padding-left: 10px;
+            padding-right: 10px;
+            
+            display: block;
+            background-color: #e6e6e6;
+        }
+        #tabs li a:hover {
+            text-decoration: none;
+            background-color: #bdbdbd;
+        }
+#content {
+    margin-top: 27px;
+    
+    padding: 10px;
+    
+    background-color: white;
+    min-height: 355px;
+    
+    border: 1px solid #848484;
+}
+table.pid_tuning {
+    width: 100%;
+    border-collapse:collapse;    
+}
+    table.pid_tuning, table.pid_tuning th, table.pid_tuning td {
+        padding: 5px;
+        border: 1px solid #8b8b8b;
+    }
+    table.pid_tuning input {
+        width: 130px;
+        height: 18px;
+        line-height: 18px;
+        
+        padding: 0 5px 0 5px;
+        border: 1px solid silver;
+        text-align: right;
+    }
+    table.pid_tuning a.update {
+        display: block;
+        
+        width: 60px;
+        height: 18px;
+        line-height: 18px;
+        
+        color: white;
+        text-align: center;
+        
+        border: 1px solid silver;
+        background-color: #078814;
+    }
+    table.pid_tuning a.update:hover {
+        text-decoration: none;
+        background-color: #13b723;
+    }

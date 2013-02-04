@@ -31,39 +31,179 @@ void setupFTM0() {
     FTM0_C0SC = 0x28;
     
     // Initial values (3000 = 1ms)
-    /* needs to be finished 
-    #if MOTORS == 4
-    #endif
-    */
-    
-    FTM0_C0V = 3000;
-    FTM0_C1V = 3000;
-    // FTM0_C2V = 3000;
-    // FTM0_C3V = 3000;
-    // FTM0_C4V = 3000;
-    FTM0_C5V = 3000;
-    FTM0_C6V = 3000;
-    // FTM0_C7V = 3000;
+    #if MOTORS == 3
+        FTM0_C0V = 3000;
+        FTM0_C1V = 3000;    
+        FTM0_C2V = 3000;  
 
-    
-    // Using PORT_PCR_MUX(4) doesn't work
-    PORTC_PCR1 |= 0x400;
-    PORTC_PCR2 |= 0x400;
-    // PORTC_PCR3 |= 0x400;
-    // PORTC_PCR4 |= 0x400;
-    // PORTD_PCR4 |= 0x400;
-    PORTD_PCR5 |= 0x400;
-    PORTD_PCR6 |= 0x400;
-    // PORTD_PCR7 |= 0x400;
+        // PORT Configuration
+        PORTC_PCR1 |= 0x400;
+        PORTC_PCR2 |= 0x400; 
+        PORTC_PCR3 |= 0x400;        
+    #elif MOTORS == 4
+        FTM0_C0V = 3000;
+        FTM0_C1V = 3000;    
+        FTM0_C2V = 3000;
+        FTM0_C3V = 3000; 
+
+        // PORT Configuration
+        PORTC_PCR1 |= 0x400;
+        PORTC_PCR2 |= 0x400; 
+        PORTC_PCR3 |= 0x400;
+        PORTC_PCR4 |= 0x400;        
+    #elif MOTORS == 6
+        FTM0_C0V = 3000;
+        FTM0_C1V = 3000;    
+        FTM0_C2V = 3000;
+        FTM0_C3V = 3000; 
+        FTM0_C4V = 3000;
+        FTM0_C5V = 3000;
+
+        // PORT Configuration
+        PORTC_PCR1 |= 0x400;
+        PORTC_PCR2 |= 0x400; 
+        PORTC_PCR3 |= 0x400;
+        PORTC_PCR4 |= 0x400;
+        PORTD_PCR4 |= 0x400;
+        PORTD_PCR5 |= 0x400;        
+    #elif MOTORS == 8
+        FTM0_C0V = 3000;
+        FTM0_C1V = 3000;    
+        FTM0_C2V = 3000;
+        FTM0_C3V = 3000; 
+        FTM0_C4V = 3000;
+        FTM0_C5V = 3000;
+        FTM0_C6V = 3000;
+        FTM0_C7V = 3000;        
+
+        // PORT Configuration
+        PORTC_PCR1 |= 0x400;
+        PORTC_PCR2 |= 0x400; 
+        PORTC_PCR3 |= 0x400;
+        PORTC_PCR4 |= 0x400;
+        PORTD_PCR4 |= 0x400;
+        PORTD_PCR5 |= 0x400;    
+        PORTD_PCR6 |= 0x400;
+        PORTD_PCR7 |= 0x400;        
+    #endif
 }
 
 void updateMotors() {
-    FTM0_C5V = MotorOut[0] * 3;
-    FTM0_C6V = MotorOut[1] * 3;
-    FTM0_C0V = MotorOut[2] * 3;
-    FTM0_C1V = MotorOut[3] * 3;
+    #if MOTORS == 3
+        FTM0_C0V = MotorOut[0] * 3;
+        FTM0_C1V = MotorOut[1] * 3;
+        FTM0_C2V = MotorOut[2] * 3;    
+    #elif MOTORS == 4
+        FTM0_C0V = MotorOut[0] * 3;
+        FTM0_C1V = MotorOut[1] * 3;
+        FTM0_C2V = MotorOut[2] * 3;
+        FTM0_C3V = MotorOut[3] * 3;
+    #elif MOTORS == 6
+        FTM0_C0V = MotorOut[0] * 3;
+        FTM0_C1V = MotorOut[1] * 3;
+        FTM0_C2V = MotorOut[2] * 3;
+        FTM0_C3V = MotorOut[3] * 3; 
+        FTM0_C4V = MotorOut[4] * 3; 
+        FTM0_C5V = MotorOut[5] * 3;         
+    #elif MOTORS == 8
+        FTM0_C0V = MotorOut[0] * 3;
+        FTM0_C1V = MotorOut[1] * 3;
+        FTM0_C2V = MotorOut[2] * 3;
+        FTM0_C3V = MotorOut[3] * 3; 
+        FTM0_C4V = MotorOut[4] * 3; 
+        FTM0_C5V = MotorOut[5] * 3;    
+        FTM0_C6V = MotorOut[6] * 3;  
+        FTM0_C7V = MotorOut[7] * 3;          
+    #endif
 }
 
 void initializeESC() {
     setupFTM0();
+    
+    if (CONFIG.data.calibrateESC) {
+        // Calibration sequence requested
+        
+        // Signal range TOP maximum
+        #if MOTORS == 3
+            MotorOut[0] = 2000;
+            MotorOut[1] = 2000;
+            MotorOut[2] = 2000;
+            
+            updateMotors();
+        #elif MOTORS == 4
+            MotorOut[0] = 2000;
+            MotorOut[1] = 2000;
+            MotorOut[2] = 2000;
+            MotorOut[3] = 2000;
+            
+            updateMotors();
+        #elif MOTORS == 6
+            MotorOut[0] = 2000;
+            MotorOut[1] = 2000;
+            MotorOut[2] = 2000;
+            MotorOut[3] = 2000;
+            MotorOut[4] = 2000;
+            MotorOut[5] = 2000;    
+
+            updateMotors();
+        #elif MOTORS == 8
+            MotorOut[0] = 2000;
+            MotorOut[1] = 2000;
+            MotorOut[2] = 2000;
+            MotorOut[3] = 2000;
+            MotorOut[4] = 2000;
+            MotorOut[5] = 2000;  
+            MotorOut[6] = 2000;
+            MotorOut[7] = 2000;
+            
+            updateMotors();
+        #endif
+        
+        // Wait for all ESCs to acknowledge (1 beep)
+        delay(5000);
+        
+        // Signal range BOTTOM minimum
+        #if MOTORS == 3
+            MotorOut[0] = 1000;
+            MotorOut[1] = 1000;
+            MotorOut[2] = 1000;
+            
+            updateMotors();
+        #elif MOTORS == 4
+            MotorOut[0] = 1000;
+            MotorOut[1] = 1000;
+            MotorOut[2] = 1000;
+            MotorOut[3] = 1000;
+            
+            updateMotors();
+        #elif MOTORS == 6
+            MotorOut[0] = 1000;
+            MotorOut[1] = 1000;
+            MotorOut[2] = 1000;
+            MotorOut[3] = 1000;
+            MotorOut[4] = 1000;
+            MotorOut[5] = 1000;    
+
+            updateMotors();
+        #elif MOTORS == 8
+            MotorOut[0] = 1000;
+            MotorOut[1] = 1000;
+            MotorOut[2] = 1000;
+            MotorOut[3] = 1000;
+            MotorOut[4] = 1000;
+            MotorOut[5] = 1000;  
+            MotorOut[6] = 1000;
+            MotorOut[7] = 1000;
+            
+            updateMotors();
+        #endif      
+
+        // Wait for all ESCs to acknowledge (2 + 1 beep)
+        delay(4000);        
+        
+        // Calibration done
+        // disabling the calibration flag and updating EEPROM
+        CONFIG.data.calibrateESC = 0;
+        writeEEPROM();
+    }
 }

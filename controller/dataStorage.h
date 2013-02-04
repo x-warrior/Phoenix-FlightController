@@ -7,7 +7,7 @@
     #define EEPROM_SIZE 512
 #endif    
 
-struct CONFIG_struct {
+struct __attribute__((packed)) CONFIG_struct {
     uint8_t version; // 1 byte
     bool calibrateESC; // 1 byte
     
@@ -45,7 +45,7 @@ void initializeEEPROM() {
     CONFIG.data.ACCEL_BIAS[1] = 260;
     CONFIG.data.ACCEL_BIAS[2] = 400;
     
-    // Attitude
+    // Altitude
     CONFIG.data.PID_YAW_c[P]  = 4.0;
     CONFIG.data.PID_YAW_c[I]  = 0.0;
     CONFIG.data.PID_YAW_c[D]  = 0.0;

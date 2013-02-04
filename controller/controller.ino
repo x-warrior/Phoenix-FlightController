@@ -19,6 +19,7 @@
 #include "math.h"
 #include "PID.h"
 #include "dataStorage.h"
+#include "SerialCommunication.h"
 
 // == Hardware setup/s == 
 #define Maggie
@@ -112,7 +113,7 @@ void setup() {
     Serial.begin(115200); // Virtual USB Serial on teensy 3.0 is always 12 Mbit/sec (can be initialized with baud rate 0)
 
     #ifdef GPS
-        Serial2.begin(38400);
+        Serial3.begin(38400);
     #endif
  
     // Join I2C bus as master
@@ -361,6 +362,10 @@ void process10HzTask() {
     #ifdef BatteryMonitorCurrent
         readBatteryMonitorCurrent();
     #endif
+    
+    // Listens/read Serial commands on Serial1 interface 
+    // (used to pass configuration data from configurator)
+    readSerial();
     
     // Blink LED to indicated activity
     Alive_LED_state = !Alive_LED_state;
