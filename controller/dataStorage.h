@@ -8,24 +8,24 @@
 #endif    
 
 struct CONFIG_struct {
-    uint8_t version;
-    bool calibrateESC;
+    uint8_t version; // 1 byte
+    bool calibrateESC; // 1 byte
     
     // Accelerometer
-    int16_t ACCEL_BIAS[3];    
+    int16_t ACCEL_BIAS[3]; // 2 * 3 bytes = 6 bytes
     
     // Attitude
-    double PID_YAW_c[4];
-    double PID_PITCH_c[4];
-    double PID_ROLL_c[4];
+    double PID_YAW_c[4]; // 4 * 4 bytes = 16 bytes
+    double PID_PITCH_c[4]; // 4 * 4 bytes = 16 bytes
+    double PID_ROLL_c[4]; // 4 * 4 bytes = 16 bytes
     
     // Rate
-    double PID_YAW_m[4];
-    double PID_PITCH_m[4];
-    double PID_ROLL_m[4];    
+    double PID_YAW_m[4]; // 4 * 4 bytes = 16 bytes
+    double PID_PITCH_m[4]; // 4 * 4 bytes = 16 bytes
+    double PID_ROLL_m[4]; // 4 * 4 bytes = 16 bytes
     
-    double PID_BARO[4];
-    double PID_SONAR[4]; 
+    double PID_BARO[4]; // 4 * 4 bytes = 16 bytes
+    double PID_SONAR[4]; // 4 * 4 bytes = 16 bytes
 };
 
 union CONFIG_union {
