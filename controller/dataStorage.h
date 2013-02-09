@@ -8,24 +8,24 @@
 #endif    
 
 struct __attribute__((packed)) CONFIG_struct {
-    uint8_t version; // 1 byte
-    bool calibrateESC; // 1 byte
+    uint8_t version;
+    bool calibrateESC;
     
     // Accelerometer
-    int16_t ACCEL_BIAS[3]; // 2 * 3 bytes = 6 bytes
+    int16_t ACCEL_BIAS[3];    
     
     // Attitude
-    double PID_YAW_c[4]; // 4 * 4 bytes = 16 bytes
-    double PID_PITCH_c[4]; // 4 * 4 bytes = 16 bytes
-    double PID_ROLL_c[4]; // 4 * 4 bytes = 16 bytes
+    double PID_YAW_c[4];
+    double PID_PITCH_c[4];
+    double PID_ROLL_c[4];
     
     // Rate
-    double PID_YAW_m[4]; // 4 * 4 bytes = 16 bytes
-    double PID_PITCH_m[4]; // 4 * 4 bytes = 16 bytes
-    double PID_ROLL_m[4]; // 4 * 4 bytes = 16 bytes
+    double PID_YAW_m[4];
+    double PID_PITCH_m[4];
+    double PID_ROLL_m[4];    
     
-    double PID_BARO[4]; // 4 * 4 bytes = 16 bytes
-    double PID_SONAR[4]; // 4 * 4 bytes = 16 bytes
+    double PID_BARO[4];
+    double PID_SONAR[4]; 
 };
 
 union CONFIG_union {
@@ -41,9 +41,9 @@ void initializeEEPROM() {
     CONFIG.data.calibrateESC = 0;
 
     // Accelerometer
-    CONFIG.data.ACCEL_BIAS[0] = -425;
-    CONFIG.data.ACCEL_BIAS[1] = 260;
-    CONFIG.data.ACCEL_BIAS[2] = 400;
+    CONFIG.data.ACCEL_BIAS[XAXIS] = -425;
+    CONFIG.data.ACCEL_BIAS[YAXIS] = 260;
+    CONFIG.data.ACCEL_BIAS[ZAXIS] = 400;
     
     // Altitude
     CONFIG.data.PID_YAW_c[P]  = 4.0;
@@ -80,13 +80,13 @@ void initializeEEPROM() {
     // Baro
     CONFIG.data.PID_BARO[P]  = 25.0;
     CONFIG.data.PID_BARO[I]  = 0.6;
-    CONFIG.data.PID_BARO[D]  = -10.0;
+    CONFIG.data.PID_BARO[D]  = -1.0;
     CONFIG.data.PID_BARO[WG] = 25.0;       
     
     // Sonar
-    CONFIG.data.PID_SONAR[P]  = 60.0;
+    CONFIG.data.PID_SONAR[P]  = 50.0;
     CONFIG.data.PID_SONAR[I]  = 0.6;
-    CONFIG.data.PID_SONAR[D]  = -10.0;
+    CONFIG.data.PID_SONAR[D]  = -1.0;
     CONFIG.data.PID_SONAR[WG] = 25.0;    
     
     // This function will only initialize data "locally"

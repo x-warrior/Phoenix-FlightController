@@ -1,8 +1,29 @@
 var connectionId = -1;
+var connection_delay = 0; // delay which defines "when" will the configurator request configurator data after connection was established
 var port_list;
-var serial_poll;
+var serial_poll = 0; // iterval timer refference
 
-var eepromConfig;
+var eepromConfig; // config object
+var eepromConfigDefinition = {
+    eepromConfigDefinition: {
+        version:      'uint8',
+        calibrateESC: 'uint8',
+
+        ACCEL_BIAS:  ['array', 'int16', 3],
+
+        PID_YAW_c:   ['array', 'float64', 4],
+        PID_PITCH_c: ['array', 'float64', 4],
+        PID_ROLL_c:  ['array', 'float64', 4],
+
+        PID_YAW_m:   ['array', 'float64', 4],
+        PID_PITCH_m: ['array', 'float64', 4],
+        PID_ROLL_m:  ['array', 'float64', 4],
+
+        PID_BARO:    ['array', 'float64', 4],
+        PID_SONAR:   ['array', 'float64', 4]
+    }
+};
+
 
 $(document).ready(function() { 
     var port_picker = $('div#port-picker .port');
@@ -40,25 +61,23 @@ $(document).ready(function() {
         var clicks = $(this).data('clicks');
         
         if (clicks) { // odd number of clicks
+            stop_data_stream();
             chrome.serial.close(connectionId, onClosed);
             
+            clearTimeout(connection_delay);
             clearInterval(serial_poll);
+            serial_poll = 0; // this also indicates that we are not reading anything
             
             $(this).text('Connect');
             $(this).removeClass('active');            
         } else { // even number of clicks         
             var selected_port = $('select#port', port_picker).val();
             var selected_baud = parseInt(baud_picker.val());
-            var selected_delay = parseInt(delay_picker);
+            connection_delay = parseInt(delay_picker.val());
             
             chrome.serial.open(selected_port, {
                 bitrate: selected_baud
             }, onOpen);
-            
-            setTimeout(function() {
-                // start polling
-                serial_poll = setInterval(readPoll, 10);
-            }, selected_delay * 1000);    
             
             $(this).text('Disconnect');  
             $(this).addClass('active');
@@ -70,110 +89,53 @@ $(document).ready(function() {
     // Tabs
     var tabs = $('#tabs > ul');
     $('a', tabs).click(function() {
-        if (connectionId < 1) { // if there is no active connection, return
+        if (connectionId < 1 || serial_poll < 1) { // if there is no active connection, return
             return;
         }
+        
         // disable previous active button
         $('li', tabs).removeClass('active');
+        stop_data_stream();
         
         // Highlight selected button
         $(this).parent().addClass('active');
         
         switch ($(this).parent().index()) {
             case 0: // initial setup
-                $('#content').load("./tabs/initial_setup.html");
+                $('#content').load("./tabs/initial_setup.html", tab_initialize_initial_setup);
             break;
             case 1: // pid tuning
-                $('#content').load("./tabs/pid_tuning.html", function() {
-                    var i = 0;
-                    
-                    // Command
-                    $('#content .command-yaw input').each(function() {
-                        $(this).val(eepromConfig.PID_YAW_c[i]);
-                        i++;
-                    });
-                    
-                    i = 0; // reset
-                    $('#content .command-pitch input').each(function() {
-                        $(this).val(eepromConfig.PID_PITCH_c[i]);
-                        i++;
-                    });
-                    
-                    i = 0; // reset
-                    $('#content .command-roll input').each(function() {
-                        $(this).val(eepromConfig.PID_ROLL_c[i]);
-                        i++;
-                    });
-
-                    // Motor
-                    i = 0; // reset
-                    $('#content .motor-yaw input').each(function() {
-                        $(this).val(eepromConfig.PID_YAW_m[i]);
-                        i++;
-                    });
-                    
-                    i = 0; // reset
-                    $('#content .motor-pitch input').each(function() {
-                        $(this).val(eepromConfig.PID_PITCH_m[i]);
-                        i++;
-                    });
-                    
-                    i = 0; // reset
-                    $('#content .motor-roll input').each(function() {
-                        $(this).val(eepromConfig.PID_ROLL_m[i]);
-                        i++;
-                    });
-
-                    // Baro
-                    i = 0; // reset
-                    $('#content .baro input').each(function() {
-                        $(this).val(eepromConfig.PID_BARO[i]);
-                        i++;
-                    });
-                    
-                    // Sonar
-                    i = 0; // reset
-                    $('#content .sonar input').each(function() {
-                        $(this).val(eepromConfig.PID_SONAR[i]);
-                        i++;
-                    });                    
-                    
-                });
+                $('#content').load("./tabs/pid_tuning.html", tab_initialize_pid_tuning);
             break;            
-            case 2: // sensor data
-                $('#content').load("./tabs/sensor_data.html");
+            case 2: // Sensor data
+                $('#content').load("./tabs/sensor_data.html", tab_initialize_sensor_data);
+            break;
+            case 3: // TX/RX data
+                $('#content').load("./tabs/rx.html", tab_initialize_rx);
+            break;
+            case 4: // 3D vehicle view
+                $('#content').load("./tabs/vehicle_view.html", tab_initialize_vehicle_view);
+            break;
+            case 5: // Motor output
+                $('#content').load("./tabs/motor_output.html");
+            break;
+            case 6: // About
+                $('#content').load("./tabs/about.html");
             break;
         }
     });
  
     // Load initial tab to content div
     $('li > a:first', tabs).click(); 
-    
-    // Specific functions in content
-    $('#content').delegate('.calibrateESC', 'click', function() {  
-        chrome.serial.write(connectionId, str2ab("[2:0]"), function(writeInfo) {
-            if (writeInfo.bytesWritten > 0) {
-                console.log("Wrote: " + writeInfo.bytesWritten + " bytes");
-                
-                command_log('ESC Calibration at next start of FC/UAV requested ...');
-            }    
-        });
-    });
-    
-    $('#content').delegate('.pid_tuning a.update', 'click', function() {
-        var parent = $(this).parent().parent();
-        var i = 0;
-        $('input', parent).each(function() {
-            val = $(this).val();
-            
-            console.log(val);
-            
-            i++;
-        });
-    });
-    
 });
 
+function command_log(message) {
+    var d = new Date();
+    var time = d.getHours() + ':' + ((d.getMinutes() < 10) ? '0' + d.getMinutes(): d.getMinutes()) + ':' + ((d.getSeconds() < 10) ? '0' + d.getSeconds(): d.getSeconds());
+    
+    $('div#command-log > div.wrapper').append('<p>' + time + ' -- ' + message + '</p>');
+    $('div#command-log').scrollTop($('div#command-log div.wrapper').height());    
+};
 
 function onOpen(openInfo) {
     connectionId = openInfo.connectionId;
@@ -182,14 +144,28 @@ function onOpen(openInfo) {
         console.log('Connection was opened with ID: ' + connectionId);
         command_log('Connection to the serial BUS was opened with ID: ' + connectionId);
         
-        // Start reading
-        chrome.serial.read(connectionId, 1, onCharRead);
+        connection_delay = setTimeout(function() {
+            // start polling
+            serial_poll = setInterval(readPoll, 10);
+            
+            // request configuration data (so we have something to work with)
+            var bufferOut = new ArrayBuffer(6);
+            var bufView = new Uint8Array(bufferOut);
+            
+            // sync char 1, sync char 2, command, payload length MSB, payload length LSB, payload
+            bufView[0] = 0xB5; // sync char 1
+            bufView[1] = 0x62; // sync char 2
+            bufView[2] = 0x01; // command
+            bufView[3] = 0x00; // payload length MSB
+            bufView[4] = 0x01; // payload length LSB
+            bufView[5] = 0x01; // payload
+            
+            chrome.serial.write(connectionId, bufferOut, function(writeInfo) {
+                console.log("Wrote: " + writeInfo.bytesWritten + " bytes");
+                command_log('Requesting configuration UNION from Flight Controller');
+            });              
+        }, connection_delay * 1000);            
         
-        // request configuration data (so we have something to work with)
-        chrome.serial.write(connectionId, str2ab("[1:0]"), function(writeInfo) {
-            console.log("Wrote: " + writeInfo.bytesWritten + " bytes");
-            command_log('Requesting configuration UNION from Flight Controller');
-        });  
     } else {
         console.log('There was a problem in opening the connection.');
     }    
@@ -213,14 +189,32 @@ function readPoll() {
     chrome.serial.read(connectionId, 24, onCharRead);
 };
 
+function stop_data_stream() {
+    var bufferOut = new ArrayBuffer(6);
+    var bufView = new Uint8Array(bufferOut);
+
+    // sync char 1, sync char 2, command, payload length MSB, payload length LSB, payload
+    bufView[0] = 0xB5; // sync char 1
+    bufView[1] = 0x62; // sync char 2
+    bufView[2] = 0x07; // command
+    bufView[3] = 0x00; // payload length MSB
+    bufView[4] = 0x01; // payload length LSB
+    bufView[5] = 0x01; // payload   
+
+    chrome.serial.write(connectionId, bufferOut, function(writeInfo) {
+        console.log("STOP DATA STREAM command - Wrote: " + writeInfo.bytesWritten + " bytes");
+    });     
+};
+
 
 var packet_state = 0;
 var command_buffer = new Array();
-var command_i = 0;
 var command;
 
+var message_length_expected = 0;
+var message_length_received = 0;
 var message_buffer = new Array();
-var chars_read = 0;
+
 function onCharRead(readInfo) {
     if (readInfo && readInfo.bytesRead > 0 && readInfo.data) {
         var data = new Uint8Array(readInfo.data);
@@ -228,35 +222,46 @@ function onCharRead(readInfo) {
         for (var i = 0; i < data.length; i++) {
             switch (packet_state) {
                 case 0:
-                    if (data[i] == 91) { // [
-                        // Reset variables
-                        command_buffer.length = 0; // empty array
-                        message_buffer.length = 0; // empty array
-                        
-                        command_i = 0;
-                        chars_read = 0;
-                        
+                    if (data[i] == 0xB5) { // sync char 1                 
                         packet_state++;
                     }
                 break;
                 case 1:
-                    if (data[i] != 58) { // :
-                        command_buffer = data[i];
-                        command_i++;
-                    } else {    
+                    if (data[i] == 0x62) { // sync char 2                 
                         packet_state++;
-                    }    
+                    } else {
+                        packet_state = 0; // Restart and try again
+                    }                    
                 break;
-                case 2:
-                    if (data[i] != 93) { // ]
-                        message_buffer[chars_read] = data[i];
-                        chars_read++;
-                    } else { // Ending char received, process data
-                        command = String.fromCharCode(command_buffer);
+                case 2: // command
+                    command = data[i];
+                    
+                    packet_state++;
+                break;
+                case 3: // payload length MSB
+                    message_length_expected = data[i] << 8;
+                    
+                    packet_state++;
+                break;
+                case 4: // payload length LSB
+                    message_length_expected |= data[i];
+                    
+                    packet_state++;
+                break;
+                case 5: // payload
+                    message_buffer[message_length_received] = data[i];
+                    message_length_received++;
+                    
+                    if (message_length_received >= message_length_expected) {
+                        // message received, process
                         process_data();
                         
+                        // Reset variables
+                        message_buffer.length = 0; // empty array
+                        message_length_received = 0;
+                        
                         packet_state = 0;
-                    }                    
+                    }
                 break;
             }
         }
@@ -265,7 +270,7 @@ function onCharRead(readInfo) {
 
 function process_data() {
     switch (command) {
-        case '1': // configuration data // 1
+        case 1: // configuration data
             var eepromConfigBytes = new ArrayBuffer(264);
             var eepromConfigBytesView = new Uint8Array(eepromConfigBytes);
             for (var i = 0; i < message_buffer.length; i++) {
@@ -273,62 +278,35 @@ function process_data() {
             }
             
             var view = new jDataView(eepromConfigBytes, 0, undefined, true);
-   
-            var parser = new jParser(view, {
-                eepromConfigDefinition: {
-                    version: 'uint8',
-                    calibrateESC: 'uint8',
-
-                    ACCEL_BIAS: ['array', 'int16', 3],
-
-                    PID_YAW_c: ['array', 'float64', 4],
-                    PID_PITCH_c: ['array', 'float64', 4],
-                    PID_ROLL_c: ['array', 'float64', 4],
-
-                    PID_YAW_m: ['array', 'float64', 4],
-                    PID_PITCH_m: ['array', 'float64', 4],
-                    PID_ROLL_m: ['array', 'float64', 4],
-
-                    PID_BARO: ['array', 'float64', 4],
-                    PID_SONAR: ['array', 'float64', 4]
-                }
-            });
+            var parser = new jParser(view, eepromConfigDefinition);
 
             eepromConfig = parser.parse('eepromConfigDefinition');
             
             $('#tabs li a:first').click();
             command_log('Configuration UNION received -- <span style="color: green">OK</span>');
         break;
-        case 50: // 2
+        case 3: // sensor data
+            process_data_sensors();
         break;
-        case '9': // ACK // 9
-            var message = String.fromCharCode(message_buffer);
+        case 4: // receiver data
+            process_data_receiver();
+        break;
+        case 5: // vehicle view
+            process_vehicle_view();
+        break;
+        case 8: // accel calibration data
+            process_accel_calibration();
+        break;
+        case 9: // ACK
+            var message = parseInt(message_buffer);
             
-            if (message == '1') {
+            if (message == 1) {
                 console.log("ACK");
+                command_log('Flight Controller responds with -- <span style="color: green">ACK</span>');
             } else {
                 console.log("REFUSED");
+                command_log('Flight Controller responds with -- <span style="color: red">REFUSED</span>');
             }
         break;
     }
-}
-
-function command_log(message) {
-    var d = new Date();
-    var time = d.getHours() + ':' + ((d.getMinutes() < 10) ? '0' + d.getMinutes(): d.getMinutes()) + ':' + ((d.getSeconds() < 10) ? '0' + d.getSeconds(): d.getSeconds());
-    
-    $('div#command-log > div.wrapper').append('<p>' + time + ' -- ' + message + '</p>');
-    $('div#command-log').scrollTop($('div#command-log div.wrapper').height());    
-}
-
-// String to array buffer
-function str2ab(str) {
-    var buf = new ArrayBuffer(str.length);
-    var bufView = new Uint8Array(buf);
-    
-    for (var i = 0, strLen = str.length; i < strLen; i++) {
-        bufView[i] = str.charCodeAt(i);
-    }
-    
-    return buf;
-}
+};

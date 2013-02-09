@@ -34,9 +34,7 @@ bool Alive_LED_state = false;
 #define ON 1
 
 // Kinematics variable defnitions
-double kinematicsAngleX = 0.0;
-double kinematicsAngleY = 0.0;
-double kinematicsAngleZ = 0.0;
+double kinematicsAngle[3];
 
 // FlightController commands definitions
 double commandYaw, commandYawAttitude, commandPitch, commandRoll, commandThrottle;
@@ -47,5 +45,4 @@ double YawMotorSpeed, PitchMotorSpeed, RollMotorSpeed, AltitudeHoldMotorSpeed;
 int16_t throttle = 1000;
 
 // Custom definitions
-//#define DATA_VISUALIZATION
 //#define DISPLAY_ITTERATIONS

@@ -19,10 +19,10 @@
 #include "math.h"
 #include "PID.h"
 #include "dataStorage.h"
-#include "SerialCommunication.h"
 
 // == Hardware setup/s == 
-#define Maggie
+//#define Maggie
+#define Development
 
 #ifdef Maggie
     // Features requested
@@ -34,7 +34,7 @@
     #define GPS
 
     // Critical sensors on board (gyro/accel)
-    #include <mpu6050.h>
+    #include <mpu6050_10DOF_stick.h>
     
     // Magnetometer
     #include <Magnetometer_HMC5883L.h>
@@ -62,6 +62,34 @@
 
     // Motor / ESC setup
     #include <ESC_teensy3_HW.h>        
+#endif
+
+#ifdef Development
+    // Features requested
+    #define Accelerometer
+    #define Magnetometer
+    #define GPS
+
+    // Critical sensors on board (gyro/accel)
+    #include <mpu6050_6DOF_stick.h>
+    
+    // Magnetometer
+    #include <Magnetometer_HMC5883L.h>
+    
+    // GPS (ublox neo 6m)
+    #include <GPS_ublox.h>
+    
+    // Kinematics used
+    #include <kinematics_CMP.h>
+    
+    // Receiver
+    #include <Receiver_teensy3_HW_PPM.h>
+    
+    // Frame type definition
+    #include <FrameType_QuadX.h> 
+
+    // Motor / ESC setup
+    #include <ESC_teensy3_HW.h>    
 #endif
 // == END of Hardware setup ==
 
@@ -102,7 +130,8 @@ void reset_PID_integrals() {
 }
   
 // Include this last as it contains objects from previous declarations
-#include "PilotCommandProcessor.h"  
+#include "PilotCommandProcessor.h"
+#include "SerialCommunication.h"  
   
 void setup() {
     // PIN settings
@@ -133,9 +162,9 @@ void setup() {
     readEEPROM();
     
     // Initialize PID objects with data from EEPROM
-    yaw_command_pid = PID(&kinematicsAngleZ, &YawCommandPIDSpeed, &commandYaw, &CONFIG.data.PID_YAW_c[P], &CONFIG.data.PID_YAW_c[I], &CONFIG.data.PID_YAW_c[D], &CONFIG.data.PID_YAW_c[WG]);
-    pitch_command_pid = PID(&kinematicsAngleY, &PitchCommandPIDSpeed, &commandPitch, &CONFIG.data.PID_PITCH_c[P], &CONFIG.data.PID_PITCH_c[I], &CONFIG.data.PID_PITCH_c[D], &CONFIG.data.PID_PITCH_c[WG]);
-    roll_command_pid = PID(&kinematicsAngleX, &RollCommandPIDSpeed, &commandRoll, &CONFIG.data.PID_ROLL_c[P], &CONFIG.data.PID_ROLL_c[I], &CONFIG.data.PID_ROLL_c[D], &CONFIG.data.PID_ROLL_c[WG]);
+    yaw_command_pid = PID(&kinematicsAngle[ZAXIS], &YawCommandPIDSpeed, &commandYaw, &CONFIG.data.PID_YAW_c[P], &CONFIG.data.PID_YAW_c[I], &CONFIG.data.PID_YAW_c[D], &CONFIG.data.PID_YAW_c[WG]);
+    pitch_command_pid = PID(&kinematicsAngle[YAXIS], &PitchCommandPIDSpeed, &commandPitch, &CONFIG.data.PID_PITCH_c[P], &CONFIG.data.PID_PITCH_c[I], &CONFIG.data.PID_PITCH_c[D], &CONFIG.data.PID_PITCH_c[WG]);
+    roll_command_pid = PID(&kinematicsAngle[XAXIS], &RollCommandPIDSpeed, &commandRoll, &CONFIG.data.PID_ROLL_c[P], &CONFIG.data.PID_ROLL_c[I], &CONFIG.data.PID_ROLL_c[D], &CONFIG.data.PID_ROLL_c[WG]);
   
     yaw_motor_pid = PID(&gyro[ZAXIS], &YawMotorSpeed, &YawCommandPIDSpeed, &CONFIG.data.PID_YAW_m[P], &CONFIG.data.PID_YAW_m[I], &CONFIG.data.PID_YAW_m[D], &CONFIG.data.PID_YAW_m[WG]);
     pitch_motor_pid = PID(&gyro[YAXIS], &PitchMotorSpeed, &PitchCommandPIDSpeed, &CONFIG.data.PID_PITCH_m[P], &CONFIG.data.PID_PITCH_m[I], &CONFIG.data.PID_PITCH_m[D], &CONFIG.data.PID_PITCH_m[WG]);
@@ -283,65 +312,6 @@ void process50HzTask() {
     
     #ifdef AltitudeHoldBaro
         sensors.evaluateBaroAltitude();
-    #endif   
-
-    #ifdef DATA_VISUALIZATION
-        // Gyro data
-        Serial.print(gyro[XAXIS]);
-        Serial.write(',');
-        Serial.print(gyro[YAXIS]);
-        Serial.write(',');
-        Serial.print(gyro[ZAXIS]);
-        Serial.write(',');        
-        
-        // Accel data
-        Serial.print(accel[XAXIS]);
-        Serial.write(',');
-        Serial.print(accel[YAXIS]);
-        Serial.write(','); 
-        Serial.print(accel[ZAXIS]);
-        Serial.write(',');         
-        
-        // Kinematics data
-        Serial.print(kinematicsAngleX * RAD_TO_DEG);
-        Serial.write(',');      
-        Serial.print(kinematicsAngleY * RAD_TO_DEG);
-        Serial.write(',');      
-        Serial.print(kinematicsAngleZ * RAD_TO_DEG);  
-        Serial.write(','); 
-        
-        // TX/RX data
-        Serial.print(TX_roll);
-        Serial.write(',');   
-        Serial.print(TX_pitch);
-        Serial.write(','); 
-        Serial.print(TX_throttle);
-        Serial.write(','); 
-        Serial.print(TX_yaw);    
-        Serial.write(','); 
-        Serial.print(TX_mode);    
-        Serial.write(',');         
-        Serial.print(TX_altitude);
-        Serial.write(','); 
-        Serial.print(TX_cam);
-        Serial.write(','); 
-        Serial.print(TX_last);
-        Serial.write(',');
-        
-        // PPM error
-        Serial.print(PPM_error);
-        Serial.write(',');
-        
-        // Motor out
-        Serial.print(MotorOut[0]);
-        Serial.write(',');
-        Serial.print(MotorOut[1]);
-        Serial.write(',');
-        Serial.print(MotorOut[2]);
-        Serial.write(',');
-        Serial.print(MotorOut[3]);
-        
-        Serial.println();     
     #endif       
 }
 
