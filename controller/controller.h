@@ -10,6 +10,7 @@ bool armed = false;
 bool flightMode = false;
 bool altitudeHoldBaro = false;
 bool altitudeHoldSonar = false;
+bool positionHoldGPS = false;
 
 // Flight modes
 #define RATE_MODE 0
@@ -34,14 +35,14 @@ bool Alive_LED_state = false;
 #define ON 1
 
 // Kinematics variable defnitions
-double kinematicsAngle[3];
+float kinematicsAngle[3];
 
 // FlightController commands definitions
-double commandYaw, commandYawAttitude, commandPitch, commandRoll, commandThrottle;
+float commandYaw, commandYawAttitude, commandPitch, commandRoll, commandThrottle;
 
 // PID variables
-double YawCommandPIDSpeed, PitchCommandPIDSpeed, RollCommandPIDSpeed;
-double YawMotorSpeed, PitchMotorSpeed, RollMotorSpeed, AltitudeHoldMotorSpeed;
+float YawCommandPIDSpeed, PitchCommandPIDSpeed, RollCommandPIDSpeed;
+float YawMotorSpeed, PitchMotorSpeed, RollMotorSpeed, AltitudeHoldMotorSpeed;
 int16_t throttle = 1000;
 
 // Custom definitions
