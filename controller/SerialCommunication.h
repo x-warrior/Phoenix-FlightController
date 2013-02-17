@@ -31,7 +31,7 @@ class Configurator {
         void read_packet() {
             while (Serial.available()) {
                 data = Serial.read();
-                
+
                 switch (state) {
                     case 0:
                         if (data == 0xB5) { // sync char 1  
