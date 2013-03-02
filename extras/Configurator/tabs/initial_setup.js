@@ -2,12 +2,9 @@ function tab_initialize_initial_setup() {
     $('#content .calibrateESC').click(function() {
         eepromConfig.calibrateESC = parseInt(1);
         
-        var eepromConfigBytes = new ArrayBuffer(264);
-        var view = new jDataView(eepromConfigBytes, 0, undefined, true);
-        
-        var composer = new jComposer(view, eepromConfigDefinition);
-        var eepromBuffer = view.buffer;
-        composer.compose(['eepromConfigDefinition'], eepromConfig);
+        var eepromConfigBytes = new ArrayBuffer(eepromConfigSize);
+        var view = new DataView(eepromConfigBytes, 0);
+        view.setUNION(eepromConfig); 
 
         var bufferOut = new ArrayBuffer(5);
         var bufView = new Uint8Array(bufferOut);
@@ -71,15 +68,13 @@ function tab_initialize_initial_setup() {
 }
 
 function process_accel_calibration() {
-    var data = new Array();
+    var view = new DataView(message_buffer, 0); // DataView (allowing is to view arrayBuffer as struct/union)
     
-    var data_counter = 0;
-    for (var i = 0; i < message_buffer.length; i++) {
-        if (i % 2 == 0) {
-            data[data_counter] = (((message_buffer[i] << 8) | message_buffer[i + 1]) << 16) >> 16;
-            data_counter++;
-        }
-    }
+    var data = new Array(); // array used to hold/store read values
+    
+    data[0] = view.getInt16(0, 0);
+    data[1] = view.getInt16(2, 0);
+    data[2] = view.getInt16(4, 0);
     
     // Update the current eepromConfig object with latest data
     eepromConfig.ACCEL_BIAS[0] = data[0];

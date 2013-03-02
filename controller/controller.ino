@@ -21,8 +21,8 @@
 #include "dataStorage.h"
 
 // == Hardware setup/s == 
-//#define PHOENIX_SHIELD_V_01
-#define AQ_SHIELD_V_20
+#define PHOENIX_SHIELD_V_01
+//#define AQ_SHIELD_V_20
 //#define AQ_SHIELD_V_21
 
 #ifdef PHOENIX_SHIELD_V_01
@@ -49,7 +49,8 @@
     #include <GPS_ublox.h>
     
     // Current sensor
-    #include <BatteryMonitor_current.h>    
+    #include <BatteryMonitor_current.h>
+    
     // Kinematics used
     #include <kinematics_CMP.h>
     
@@ -191,7 +192,7 @@ void setup() {
     readEEPROM();
     
     // Initialize PID objects with data from EEPROM
-    yaw_command_pid = PID(&kinematicsAngle[ZAXIS], &YawCommandPIDSpeed, &commandYaw, 
+    yaw_command_pid = PID(&headingError, &YawCommandPIDSpeed, &headingSetpoint, 
         &CONFIG.data.PID_YAW_c[P], &CONFIG.data.PID_YAW_c[I], &CONFIG.data.PID_YAW_c[D], &CONFIG.data.PID_YAW_c[WG]);
         
     pitch_command_pid = PID(&kinematicsAngle[YAXIS], &PitchCommandPIDSpeed, &commandPitch, 
@@ -324,6 +325,11 @@ void process100HzTask() {
     // Update kinematics with latest data
     kinematics_update(gyro[XAXIS], gyro[YAXIS], gyro[ZAXIS], accel[XAXIS], accel[YAXIS], accel[ZAXIS]);
     
+    // Update heading
+    headingError = kinematicsAngle[ZAXIS] - commandYawAttitude;
+    NORMALIZE(headingError); // +- PI
+    
+    // Update PIDs according the selected mode
     if (flightMode == ATTITUDE_MODE) {
         // Compute command PIDs (with kinematics correction)
         yaw_command_pid.Compute();
@@ -382,7 +388,20 @@ void process50HzTask() {
     
     #ifdef AltitudeHoldBaro
         sensors.evaluateBaroAltitude();
-    #endif     
+    #endif   
+
+    // Blink LED to indicated activity
+    if ((Alive_LED_state == 51) || (Alive_LED_state == 59) || (Alive_LED_state == 67)) {
+        digitalWrite(LED_PIN, HIGH);
+    } else {
+        digitalWrite(LED_PIN, LOW);
+    }
+
+    if (Alive_LED_state >= 100) {
+        Alive_LED_state = 0;
+    } else {
+        Alive_LED_state++;
+    }
 }
 
 void process10HzTask() {
@@ -402,10 +421,6 @@ void process10HzTask() {
     #ifdef BatteryMonitorCurrent
         readBatteryMonitorCurrent();
     #endif   
-    
-    // Blink LED to indicated activity
-    Alive_LED_state = !Alive_LED_state;
-    digitalWrite(LED_PIN, Alive_LED_state);    
     
     // Print itterations per 100ms
     #ifdef DISPLAY_ITTERATIONS

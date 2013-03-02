@@ -5,16 +5,15 @@
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <meta name="author" content="cTn" />
         <link type="text/css" rel="stylesheet" href="./css/style.css" media="all" /> 
-        <script type="text/javascript" src="./js/jquery-1.9.0.min.js"></script>
+        <script type="text/javascript" src="./js/jquery-1.9.1.min.js"></script>
         <script type="text/javascript" src="./js/flotr2.min.js"></script>
-        <script type="text/javascript" src="./js/jdataview.js"></script>
-        <script type="text/javascript" src="./js/jparser.js"></script>
-        <script type="text/javascript" src="./js/jcomposer.js"></script>
+        <script type="text/javascript" src="./js/union_process.js"></script>
         <script type="text/javascript" src="./js/custom.js"></script> 
         
         <!-- Various tabs are divided into separate files (for clarity) --> 
         <script type="text/javascript" src="./tabs/initial_setup.js"></script>
         <script type="text/javascript" src="./tabs/pid_tuning.js"></script>
+        <script type="text/javascript" src="./tabs/channel_assigner.js"></script>
         <script type="text/javascript" src="./tabs/sensor_data.js"></script>
         <script type="text/javascript" src="./tabs/rx.js"></script>  
         <script type="text/javascript" src="./tabs/vehicle_view.js"></script>  
@@ -23,11 +22,13 @@
     <body>
         <div id="main-wrapper">
             <div id="port-picker">
-                <dl>
-                    <dt class="port">
-                    </dt>
-                    <dd>Port</dd>
-                    <dt>
+                <ul>
+                    <li class="port">
+                        <select id="port">
+                            <!-- port list gets generated here -->
+                        </select>
+                    </li>
+                    <li>
                         <select id="baud">
                             <option value="115200">115200</option>
                             <option value="57600">57600</option>
@@ -41,9 +42,8 @@
                             <option value="1200">1200</option>
                             <option value="300">300</option>
                         </select>
-                    </dt>
-                    <dd>Baud</dd>
-                    <dt>
+                    </li>
+                    <li>
                         <select id="delay">
                             <option value="0">0</option>
                             <option value="1">1</option>
@@ -57,13 +57,12 @@
                             <option value="9">9</option>
                             <option value="10">10</option>
                         </select>
-                    </dt>
-                    <dd>Delay</dd>
-                </dl>
-                <div class="left">
-                    <a class="refresh" href="#" title="">Refresh</a>
-                    <a class="connect" href="#" title="">Connect</a>
-                </div>    
+                    </li>
+                    <li>
+                        <a class="connect" href="#" title="">Connect</a>
+                        <a class="refresh" href="#" title="">Refresh</a>                        
+                    </li>
+                </ul>  
             </div>
             <div id="command-log">
                 <div class="wrapper">
@@ -72,13 +71,14 @@
             <div class="clear-both"></div>
             <div id="tabs">
                 <ul>
-                    <li class="first"><a href="#" title="">Initial Setup</a></li>
-                    <li><a href="#" title="">PID Tuning</a></li>
-                    <li><a href="#" title="">Sensor Data</a></li>
-                    <li><a href="#" title="">TX/RX Values</a></li>
-                    <li><a href="#" title="">3D Vehicle View</a></li>
-                    <li><a href="#" title="">Motor Output</a></li>
-                    <li class="last"><a href="#" title="">About</a></li>
+                    <li class="first tab_initial_setup"><a href="#" title="">Initial Setup</a></li>
+                    <li class="tab_pid_tuning"><a href="#" title="">PID Tuning</a></li>
+                    <li class="tab_channel_assigner"><a href="#" title="">Channel Assigner</a></li>
+                    <li class="tab_tx_rx"><a href="#" title="">TX/RX Values</a></li>
+                    <li class="tab_sensor_data"><a href="#" title="">Sensor Data</a></li>
+                    <li class="tab_vehicle_view"><a href="#" title="">3D Vehicle View</a></li>
+                    <li class="tab_motor_output"><a href="#" title="">Motor Output</a></li>
+                    <li class="last tab_about"><a href="#" title="">About</a></li>
                 </ul>
                 <div class="clear-both"></div>
             </div>            

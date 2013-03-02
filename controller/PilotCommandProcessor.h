@@ -5,14 +5,18 @@ void processPilotCommands() {
     // read data into variables
     cli(); // disable interrupts
     
-    TX_roll = RX[0];     // CH-1 AIL
-    TX_pitch = RX[1];    // CH-2 ELE
-    TX_throttle = RX[2]; // CH-3 THR
-    TX_yaw = RX[3];      // CH-4 RUD
-    TX_mode = RX[4];     // CH-5 FULL ELE switch (off = rate, on = attitude)
-    TX_altitude = RX[5]; // CH-6
-    TX_pos_hold = RX[6]; // CH-7
-    TX_last = RX[7];     // CH-8
+    // Channel assignment variables are loaded from eeprom
+    // allowing user to "dynamically" (via configurator) change the rx channel assignment
+    // potentionally allowing to "wire" channels from RX to FC completely wrong 
+    // (and then fixing them manually in Channel Assigner)
+    TX_roll     = RX[CONFIG.data.CHANNEL_ASSIGNMENT[0]];
+    TX_pitch    = RX[CONFIG.data.CHANNEL_ASSIGNMENT[1]];
+    TX_throttle = RX[CONFIG.data.CHANNEL_ASSIGNMENT[2]];
+    TX_yaw      = RX[CONFIG.data.CHANNEL_ASSIGNMENT[3]];
+    TX_mode     = RX[CONFIG.data.CHANNEL_ASSIGNMENT[4]];
+    TX_altitude = RX[CONFIG.data.CHANNEL_ASSIGNMENT[5]];
+    TX_pos_hold = RX[CONFIG.data.CHANNEL_ASSIGNMENT[6]];
+    TX_last     = RX[CONFIG.data.CHANNEL_ASSIGNMENT[7]];
     
     sei(); // enable interrupts
     
@@ -26,7 +30,6 @@ void processPilotCommands() {
         
         if (flightMode = ATTITUDE_MODE) {
             commandYawAttitude = kinematicsAngle[ZAXIS];
-            commandYaw = commandYawAttitude;
         } else if (flightMode == RATE_MODE)  {
             commandYaw = 0.0;
         } 
@@ -51,7 +54,6 @@ void processPilotCommands() {
             // We just switched from rate to attitude mode
             // That means YAW correction should be applied to avoid YAW angle "jump"
             commandYawAttitude = kinematicsAngle[ZAXIS];
-            commandYaw = commandYawAttitude;
         }
         
         flightMode = ATTITUDE_MODE;
@@ -142,27 +144,18 @@ void processPilotCommands() {
     // Reverse YAW
     TX_yaw = -TX_yaw;
     
-    // YAW deadband (its not 100% necessary, but i am more confiden't having it here)
-    // + i don't know anyone that is using YAW trimms on multicopter
-    // - it ruins YAW/Rudder trimms on TX
+    // YAW deadband (tiny 5us deadband to cancel any noise/offset from the TX)
+    // PWM2RAD = 0.002
+    // ATTITUDE_SCALING = 0.75 * PWM2RAD = 0.0015 // 0.75 is just an arbitrary scale factor to limit the range to about ~43 degrees (0.75 radians)
     if (abs(TX_yaw) > 5) { // If yaw signal is bigger then 5 (5us) allow commandYaw to change
-        // PWM2RAD = 0.002, ATTITUDE_SCALING = 0.75 * PWM2RAD = 0.0015
-        // division by 50 is used to slow down YAW build up 
         if (flightMode == ATTITUDE_MODE) {
             // YAW angle build up over time
-            commandYawAttitude += (TX_yaw * 0.0015) / 50;
-            
-            commandYaw = commandYawAttitude;           
+            commandYawAttitude += (TX_yaw * 0.0015) / 48; // division by 48 is used to slow down YAW build up 
+            NORMALIZE(commandYawAttitude); // +- PI
         } else if (flightMode == RATE_MODE) {
             // raw stick input
             commandYaw = (TX_yaw * 0.0015);
         }      
-    } else {
-        // Pilot sticks didn't changed but commandYawAttitude is also accesed directly by kinematics
-        // so in theory it could change, and we need to handle this.
-        if (flightMode == ATTITUDE_MODE) {
-            commandYaw = commandYawAttitude;
-        }
     }
  
     commandRoll = TX_roll * 0.0015;

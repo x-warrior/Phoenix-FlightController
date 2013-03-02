@@ -3,34 +3,12 @@ var connection_delay = 0; // delay which defines "when" will the configurator re
 var port_list;
 var serial_poll = 0; // iterval timer refference
 
-var eepromConfig; // config object
 var eepromConfigSize;
-var eepromConfigDefinition = {
-    eepromConfigDefinition: {
-        version:      'uint8',
-        calibrateESC: 'uint8',
-
-        ACCEL_BIAS:  ['array', 'int16', 3],
-
-        PID_YAW_c:   ['array', 'float32', 4],
-        PID_PITCH_c: ['array', 'float32', 4],
-        PID_ROLL_c:  ['array', 'float32', 4],
-
-        PID_YAW_m:   ['array', 'float32', 4],
-        PID_PITCH_m: ['array', 'float32', 4],
-        PID_ROLL_m:  ['array', 'float32', 4],
-
-        PID_BARO:    ['array', 'float32', 4],
-        PID_SONAR:   ['array', 'float32', 4],
-        PID_GPS:     ['array', 'float32', 4]
-    }
-};
-
 
 $(document).ready(function() { 
-    var port_picker = $('div#port-picker .port');
-    var baud_picker = $('div#port-picker #baud');
-    var delay_picker = $('div#port-picker #delay');
+    port_picker = $('div#port-picker .port select');
+    baud_picker = $('div#port-picker #baud');
+    delay_picker = $('div#port-picker #delay');
     
     $('div#port-picker a.refresh').click(function() {
         console.log("Available port list requested.");
@@ -39,24 +17,22 @@ $(document).ready(function() {
         chrome.serial.getPorts(function(ports) {
             if (ports.length > 0) {
                 // Port list received
-                port_picker.html('<select id="port"></select>');
                 
                 ports.forEach(function(port) {
-                    $('select', port_picker).append($("<option/>", {
+                    $(port_picker).append($("<option/>", {
                         value: port,
                         text: port
                     }));        
                 });
             } else {
-                // Looks like this check is kinda useless as the serial API doesn't seem to work in windows
-                // at all, requires v25>
-                // No serial ports found (do something/offer solution)
+                $(port_picker).append('<option>NOT FOUND</option>');
+                
                 console.log("No serial ports detected");
             }
         });
     });
     
-    // software click to refresh port picker select during first load
+    // software click to refresh port picker select (during initial load)
     $('div#port-picker a.refresh').click();
     
     $('div#port-picker a.connect').click(function() {
@@ -73,7 +49,7 @@ $(document).ready(function() {
             $(this).text('Connect');
             $(this).removeClass('active');            
         } else { // even number of clicks         
-            var selected_port = String($('select#port', port_picker).val());
+            var selected_port = String($(port_picker).val());
             var selected_baud = parseInt(baud_picker.val());
             connection_delay = parseInt(delay_picker.val());
             
@@ -95,6 +71,7 @@ $(document).ready(function() {
     $('a', tabs).click(function() {
         if ($(this).parent().hasClass('active') == false) { // only initialize when the tab isn't already active
             if (connectionId < 1 || serial_poll < 1) { // if there is no active connection, return
+                command_log('You <span style="color: red;">can\'t</span> view the tabs unless you <span style="color: green">connect</span> to the flight controller.');
                 return;
             }
             
@@ -105,34 +82,25 @@ $(document).ready(function() {
             // Highlight selected button
             $(this).parent().addClass('active');
             
-            switch ($(this).parent().index()) {
-                case 0: // initial setup
-                    $('#content').load("./tabs/initial_setup.html", tab_initialize_initial_setup);
-                break;
-                case 1: // pid tuning
-                    $('#content').load("./tabs/pid_tuning.html", tab_initialize_pid_tuning);
-                break;            
-                case 2: // Sensor data
-                    $('#content').load("./tabs/sensor_data.html", tab_initialize_sensor_data);
-                break;
-                case 3: // TX/RX data
-                    $('#content').load("./tabs/rx.html", tab_initialize_rx);
-                break;
-                case 4: // 3D vehicle view
-                    $('#content').load("./tabs/vehicle_view.html", tab_initialize_vehicle_view);
-                break;
-                case 5: // Motor output
-                    $('#content').load("./tabs/motor_output.html", tab_initialize_motor_output);
-                break;
-                case 6: // About
-                    $('#content').load("./tabs/about.html");
-                break;
-            }
+            if ($(this).parent().hasClass('tab_initial_setup')) {
+                $('#content').load("./tabs/initial_setup.html", tab_initialize_initial_setup);
+            } else if ($(this).parent().hasClass('tab_pid_tuning')) {
+                $('#content').load("./tabs/pid_tuning.html", tab_initialize_pid_tuning);
+            } else if ($(this).parent().hasClass('tab_channel_assigner')) {
+                $('#content').load("./tabs/channel_assigner.html", tab_initialize_channel_assigner);
+            } else if ($(this).parent().hasClass('tab_sensor_data')) {
+                $('#content').load("./tabs/sensor_data.html", tab_initialize_sensor_data);
+            } else if ($(this).parent().hasClass('tab_tx_rx')) {
+                $('#content').load("./tabs/rx.html", tab_initialize_rx);
+            } else if ($(this).parent().hasClass('tab_vehicle_view')) {
+                $('#content').load("./tabs/vehicle_view.html", tab_initialize_vehicle_view);
+            } else if ($(this).parent().hasClass('tab_motor_output')) {
+                $('#content').load("./tabs/motor_output.html", tab_initialize_motor_output);
+            } else if ($(this).parent().hasClass('tab_about')) {
+                $('#content').load("./tabs/about.html");
+            }            
         }
     });
- 
-    // Load initial tab to content div
-    $('li > a:first', tabs).click(); 
 });
 
 function command_log(message) {
@@ -149,8 +117,10 @@ function onOpen(openInfo) {
     connectionId = openInfo.connectionId;
     
     if (connectionId != -1) {
+        var selected_port = String($(port_picker).val());
+        
         console.log('Connection was opened with ID: ' + connectionId);
-        command_log('Connection to the serial BUS was opened with ID: ' + connectionId);
+        command_log('Connection to: ' + selected_port + ' was opened with ID: ' + connectionId);
         
         connection_delay = setTimeout(function() {
             // start polling
@@ -225,7 +195,8 @@ var command;
 
 var message_length_expected = 0;
 var message_length_received = 0;
-var message_buffer = new Array();
+var message_buffer;
+var message_buffer_uint8_view;
 
 function onCharRead(readInfo) {
     if (readInfo && readInfo.bytesRead > 0 && readInfo.data) {
@@ -258,10 +229,14 @@ function onCharRead(readInfo) {
                 case 4: // payload length LSB
                     message_length_expected |= data[i];
                     
+                    // setup arraybuffer
+                    message_buffer = new ArrayBuffer(message_length_expected);
+                    message_buffer_uint8_view = new Uint8Array(message_buffer);
+                    
                     packet_state++;
                 break;
                 case 5: // payload
-                    message_buffer[message_length_received] = data[i];
+                    message_buffer_uint8_view[message_length_received] = data[i];
                     message_length_received++;
                     
                     if (message_length_received >= message_length_expected) {
@@ -269,7 +244,6 @@ function onCharRead(readInfo) {
                         process_data();
                         
                         // Reset variables
-                        message_buffer.length = 0; // empty array
                         message_length_received = 0;
                         
                         packet_state = 0;
@@ -283,20 +257,12 @@ function onCharRead(readInfo) {
 function process_data() {
     switch (command) {
         case 1: // configuration data
-            console.log('Expected UNION size: ' + message_length_expected + ', Received UNION size: ' + message_buffer.length);
+            console.log('Expected UNION size: ' + message_length_expected + ', Received UNION size: ' + message_buffer_uint8_view.length);
             // Store UNION size for later usage
             eepromConfigSize = message_length_expected;
             
-            var eepromConfigBytes = new ArrayBuffer(eepromConfigSize);
-            var eepromConfigBytesView = new Uint8Array(eepromConfigBytes);
-            for (var i = 0; i < message_buffer.length; i++) {
-                eepromConfigBytesView[i] = message_buffer[i];
-            }
-            
-            var view = new jDataView(eepromConfigBytes, 0, undefined, true);
-            var parser = new jParser(view, eepromConfigDefinition);
-
-            eepromConfig = parser.parse('eepromConfigDefinition');
+            var view = new DataView(message_buffer, 0);
+            view.parseUNION(eepromConfig); 
             
             $('#tabs li a:first').click();
             command_log('Configuration UNION received -- <span style="color: green">OK</span>');
@@ -317,7 +283,7 @@ function process_data() {
             process_accel_calibration();
         break;
         case 9: // ACK
-            var message = parseInt(message_buffer);
+            var message = parseInt(message_buffer_uint8_view[0]);
             
             if (message == 1) {
                 console.log("ACK");

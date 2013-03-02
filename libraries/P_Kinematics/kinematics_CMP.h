@@ -29,39 +29,25 @@ void kinematics_update(float gyroX, float gyroY, float gyroZ, float accelX, floa
     //float accelYangle = atan2(*accelX, sqrt(*accelY * *accelY + *accelZ * *accelZ));   
     
     // Accelerometer cut-off
-    float accelWeight = 0.0025; // normal operation
+    float accelWeight = 0.0050; // normal operation
     if (norm > 13.0 || norm < 7.0) accelWeight = 0.00; // gyro only
     
     // Save current time into variable for better computation time
     unsigned long now = micros();    
     
     // Fuse in gyroscope
-    kinematicsAngle[XAXIS] = kinematicsAngle[XAXIS] + (gyroX * (float)(now - kinematics_timer) / 1000000);
-    kinematicsAngle[YAXIS] = kinematicsAngle[YAXIS] + (gyroY * (float)(now - kinematics_timer) / 1000000);
-    kinematicsAngle[ZAXIS] = kinematicsAngle[ZAXIS] + (gyroZ * (float)(now - kinematics_timer) / 1000000);  
+    kinematicsAngle[XAXIS] += (gyroX * (float)(now - kinematics_timer) / 1000000);
+    kinematicsAngle[YAXIS] += (gyroY * (float)(now - kinematics_timer) / 1000000);
+    kinematicsAngle[ZAXIS] += (gyroZ * (float)(now - kinematics_timer) / 1000000);  
     
-    // Normalize gyro kinematics (+ - PI)
-    if (kinematicsAngle[XAXIS] > PI) kinematicsAngle[XAXIS] -= TWO_PI;
-    else if (kinematicsAngle[XAXIS] < -PI) kinematicsAngle[XAXIS] += TWO_PI;    
-    
-    if (kinematicsAngle[YAXIS] > PI) kinematicsAngle[YAXIS] -= TWO_PI;
-    else if (kinematicsAngle[YAXIS] < -PI) kinematicsAngle[YAXIS] += TWO_PI;
-    
-    // While normalizing Z angle, attitudeYaw (angle desired by user) is also normalized
-    // attitudeYaw variable was added to handle clean normalization of angles while still
-    // allowing for a smooth rate/attitude mode switching.
-    if (kinematicsAngle[ZAXIS] > PI) {
-        kinematicsAngle[ZAXIS] -= TWO_PI;
-        commandYawAttitude -= TWO_PI;
-    } else if (kinematicsAngle[ZAXIS] < -PI) {
-        kinematicsAngle[ZAXIS] += TWO_PI; 
-        commandYawAttitude += TWO_PI;
-    }
-    
-    // Fuse in accel (handling accel flip)
+    // Normalize gyro kinematics (+- PI)
+    NORMALIZE(kinematicsAngle[XAXIS]);
+    NORMALIZE(kinematicsAngle[YAXIS]);
+    NORMALIZE(kinematicsAngle[ZAXIS]);
+
+    // Fuse in accel
     // This is second order accelerometer cut off, which restricts accel data fusion in only
-    // "up-side UP" angle estimation and restricts it further to avoid incorrect accelerometer
-    // data correction.
+    // "up-side UP" orientation and restricts it further to avoid incorrect accelerometer data fusion.
     if (accelZ > 0.75) {
         if ((kinematicsAngle[XAXIS] - accelXangle) > PI) {
             kinematicsAngle[XAXIS] = (1.00 - accelWeight) * kinematicsAngle[XAXIS] + accelWeight * (accelXangle + TWO_PI);
