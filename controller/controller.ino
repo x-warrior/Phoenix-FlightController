@@ -13,6 +13,11 @@
 #include <Wire.h>
 #include <EEPROM.h>
 
+// Matheus add
+#include <SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
+
 // Custom imports
 #include "controller.h"
 #include "sensors.h"
@@ -160,14 +165,50 @@ void reset_PID_integrals() {
 #include "GPS.h"
 #include "PilotCommandProcessor.h"
 #include "SerialCommunication.h"  
+
+RF24 radio(3,4);
+const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
+
+
+class commands {
+  public:
+   commands(byte t[4]) {
+      throttle = t[0];
+      yaw = t[1];
+      pitch = t[2];
+      roll = t[3];
+   } 
+   commands(char t, char y, char p, char r) {
+    throttle = t;
+    yaw = y;
+    pitch = p;   
+    roll = r;
+   }
+  char throttle;
+  char yaw;
+  char pitch;
+  char roll;
+};
   
 void setup() {
     // PIN settings
-    pinMode(LED_PIN, OUTPUT); // build in status LED
+    //pinMode(LED_PIN, OUTPUT); // build in status LED
     pinMode(LED_ORIENTATION, OUTPUT); // orientation lights
 
     // Initialize serial communication
     Serial.begin(38400); // Virtual USB Serial on teensy 3.0 is always 12 Mbit/sec (can be initialized with baud rate 0)
+    
+    radio.begin();     
+    radio.setRetries(15,15);
+
+    radio.setPayloadSize(sizeof(commands));
+    radio.setPALevel(RF24::RF24_PA_LOW);
+    radio.setChannel(0x4c);
+    
+    radio.openWritingPipe(pipes[1]);
+    radio.openReadingPipe(1,pipes[0]);
+    
+    radio.startListening();
 
     #ifdef GPS
         Serial3.begin(38400);
@@ -306,7 +347,22 @@ void loop() {
     }
 }
 
+void listen() {
+    byte data[sizeof(commands)];
+    if(radio.available()){
+        bool done = false;
+        while (!done) {
+            done = radio.read( &data, sizeof(commands) );
+        }
+        commands c = (commands) data;
+        //RX[0] = c.throttle;
+        //RX[1] = c.yaw;
+        //RX[2] = c.pitch;
+        //RX[3] = c.roll;
+    }
+}
 void process100HzTask() {    
+    listen(); 
     sensors.evaluateGyro();
     sensors.evaluateAccel();
     
@@ -392,9 +448,9 @@ void process50HzTask() {
 
     // Blink LED to indicated activity
     if ((Alive_LED_state == 51) || (Alive_LED_state == 59) || (Alive_LED_state == 67)) {
-        digitalWrite(LED_PIN, HIGH);
+//        digitalWrite(LED_PIN, HIGH);
     } else {
-        digitalWrite(LED_PIN, LOW);
+//        digitalWrite(LED_PIN, LOW);
     }
 
     if (Alive_LED_state >= 100) {
