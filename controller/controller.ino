@@ -31,10 +31,14 @@
 //#define AQ_SHIELD_V_21
 
 #ifdef PHOENIX_SHIELD_V_01
+    // Led defines
+    #define LED_WHITE 2
+    #define LED_BLUE 4
+    #define LED_ARDUINO 13
+    
     // Features requested
     #define Magnetometer
     #define AltitudeHoldBaro
-    #define AltitudeHoldSonar
     #define BatteryMonitorCurrent
     #define GPS
     
@@ -46,9 +50,6 @@
     
     // Barometer
     #include <Barometer_ms5611.h>
-    
-    // Sonar
-    #include <Sonar_srf04.h>
     
     // GPS (ublox neo 6m)
     #include <GPS_ublox.h>
@@ -71,6 +72,9 @@
 #endif
 
 #ifdef AQ_SHIELD_V_20
+    // Led defines
+    #define LED_ARDUINO 13
+    
     // Features requested
     #define Magnetometer
     
@@ -95,6 +99,9 @@
 #endif
 
 #ifdef AQ_SHIELD_V_21
+    // Led defines
+    #define LED_ARDUINO 13
+    
     // Features requested
     #define Magnetometer
     
@@ -192,9 +199,19 @@ class commands {
   
 void setup() {
     // PIN settings
-    //pinMode(LED_PIN, OUTPUT); // build in status LED
-    pinMode(LED_ORIENTATION, OUTPUT); // orientation lights
 
+    //pinMode(LED_PIN, OUTPUT); // build in status LED
+    //pinMode(LED_ORIENTATION, OUTPUT); // orientation lights
+    //pinMode(LED_ARDUINO, OUTPUT);
+    
+    #ifdef LED_WHITE
+        pinMode(LED_WHITE, OUTPUT);
+    #endif
+
+    #ifdef LED_BLUE
+        pinMode(LED_BLUE, OUTPUT);
+    #endif
+        
     // Initialize serial communication
     Serial.begin(38400); // Virtual USB Serial on teensy 3.0 is always 12 Mbit/sec (can be initialized with baud rate 0)
     
@@ -407,35 +424,6 @@ void process100HzTask() {
     if (armed) {
         updateMotorsMix(); // Frame specific motor mix
         updateMotors(); // Update ESCs
-    } else {
-        // Reset all motors to 0 throttle/power
-        #if MOTORS == 3
-            MotorOut[0] = 1000;
-            MotorOut[1] = 1000;
-            MotorOut[2] = 1000;
-        #elif MOTORS == 4
-            MotorOut[0] = 1000;
-            MotorOut[1] = 1000;
-            MotorOut[2] = 1000;
-            MotorOut[3] = 1000;
-        #elif MOTORS == 6
-            MotorOut[0] = 1000;
-            MotorOut[1] = 1000;
-            MotorOut[2] = 1000;
-            MotorOut[3] = 1000;
-            MotorOut[4] = 1000;
-            MotorOut[5] = 1000;
-        #elif MOTORS == 8
-            MotorOut[0] = 1000;
-            MotorOut[1] = 1000;
-            MotorOut[2] = 1000;
-            MotorOut[3] = 1000;
-            MotorOut[4] = 1000;
-            MotorOut[5] = 1000; 
-            MotorOut[6] = 1000;
-            MotorOut[7] = 1000;
-        #endif
-        updateMotors(); // Update ESCs
     } 
 }
 
@@ -453,11 +441,20 @@ void process50HzTask() {
 //        digitalWrite(LED_PIN, LOW);
     }
 
-    if (Alive_LED_state >= 100) {
-        Alive_LED_state = 0;
-    } else {
-        Alive_LED_state++;
-    }
+    #ifdef LED_WHITE
+        // Blink "aircraft beacon" LED
+        if ((Beacon_LED_state == 51) || (Beacon_LED_state == 59) || (Beacon_LED_state == 67)) {
+            digitalWrite(LED_WHITE, HIGH);
+        } else {
+            digitalWrite(LED_WHITE, LOW);
+        }
+
+        if (Beacon_LED_state >= 100) {
+            Beacon_LED_state = 0;
+        } else {
+            Beacon_LED_state++;
+        }
+    #endif
 }
 
 void process10HzTask() {
@@ -483,16 +480,22 @@ void process10HzTask() {
         Serial.println(itterations);
     #endif
     
+    // Blink integrated arduino LED
+    Arduino_LED_state = !Arduino_LED_state;
+    digitalWrite(LED_ARDUINO, Arduino_LED_state);   
+    
     // Reset Itterations
     itterations = 0;    
 }
 
 void process1HzTask() {   
-    // Orientation ligts
-    // also displaying armed / dis-armed status
-    if (armed) {
-        digitalWrite(LED_ORIENTATION, HIGH);
-    } else {
-        digitalWrite(LED_ORIENTATION, LOW);
-    }
+    #ifdef LED_BLUE
+        // Armed/ Dis-armed indicator
+        if (armed) {
+            digitalWrite(LED_BLUE, HIGH);
+        } else {
+            digitalWrite(LED_BLUE, LOW);
+        }
+    #endif
 }
+

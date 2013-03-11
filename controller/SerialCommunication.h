@@ -149,6 +149,24 @@ class Configurator {
                     // Send back configuration union
                     send_UNION();                    
                 break;
+                case 10: // Sending motor command
+                    // data_buffer should contain 2 bytes (byte 0 = motor number, byte 1 = value)
+                    if (data_buffer[0] < MOTORS) { // Check if motor number is within our setup
+                        MotorOut[data_buffer[0]] = 1000 + (data_buffer[1] * 10);
+                        updateMotors(); // Update ESCs
+                    } else { // Motor number is not in our setup
+                        REFUSED();
+                    }
+                break;
+                case 11: // Requesting amount of motors used in current setup
+                    // Send over the accel calibration data
+                    Serial.write(0xB5); // sync char 1
+                    Serial.write(0x62); // sync char 2
+                    Serial.write(0x0B); // command
+                    Serial.write(0x00); // payload length MSB
+                    Serial.write(0x01); // payload length LSB  
+                    Serial.write(MOTORS); // payload
+                break;
                 default: // Unrecognized command
                     REFUSED();
             }
@@ -182,9 +200,9 @@ class Configurator {
                     Serial.write(0x62); // sync char 2
                     Serial.write(0x04); // command
                     Serial.write(0x00); // payload length MSB
-                    Serial.write(16); // payload length LSB  
+                    Serial.write(CHANNELS * 2); // payload length LSB  
                     
-                    for (uint8_t channel = 0; channel <= PPM_CHANNELS; channel++) {
+                    for (uint8_t channel = 0; channel <= CHANNELS; channel++) {
                         Serial.write(highByte(RX[channel]));
                         Serial.write(lowByte(RX[channel]));
                     }                 
@@ -203,51 +221,16 @@ class Configurator {
                 }
                 
                 if (output_motor_out) {
-                    #if MOTORS == 3
-                        Serial.write(0xB5); // sync char 1
-                        Serial.write(0x62); // sync char 2
-                        Serial.write(0x06); // command
-                        Serial.write(0x00); // payload length MSB
-                        Serial.write(6); // payload length LSB  
-                        
-                        for (uint8_t motor = 0; motor <= MOTORS; motor++) {
-                            Serial.write(highByte(MotorOut[motor]));
-                            Serial.write(lowByte(MotorOut[motor]));
-                        }                     
-                    #elif MOTORS == 4
-                        Serial.write(0xB5); // sync char 1
-                        Serial.write(0x62); // sync char 2
-                        Serial.write(0x06); // command
-                        Serial.write(0x00); // payload length MSB
-                        Serial.write(8); // payload length LSB  
-                        
-                        for (uint8_t motor = 0; motor <= MOTORS; motor++) {
-                            Serial.write(highByte(MotorOut[motor]));
-                            Serial.write(lowByte(MotorOut[motor]));
-                        }                    
-                    #elif MOTORS == 6
-                        Serial.write(0xB5); // sync char 1
-                        Serial.write(0x62); // sync char 2
-                        Serial.write(0x06); // command
-                        Serial.write(0x00); // payload length MSB
-                        Serial.write(12); // payload length LSB  
-                        
-                        for (uint8_t motor = 0; motor <= MOTORS; motor++) {
-                            Serial.write(highByte(MotorOut[motor]));
-                            Serial.write(lowByte(MotorOut[motor]));
-                        }                      
-                    #elif MOTORS == 8
-                        Serial.write(0xB5); // sync char 1
-                        Serial.write(0x62); // sync char 2
-                        Serial.write(0x06); // command
-                        Serial.write(0x00); // payload length MSB
-                        Serial.write(16); // payload length LSB  
-                        
-                        for (uint8_t motor = 0; motor <= MOTORS; motor++) {
-                            Serial.write(highByte(MotorOut[motor]));
-                            Serial.write(lowByte(MotorOut[motor]));
-                        }                    
-                    #endif
+                    Serial.write(0xB5); // sync char 1
+                    Serial.write(0x62); // sync char 2
+                    Serial.write(0x06); // command
+                    Serial.write(0x00); // payload length MSB
+                    Serial.write(MOTORS * 2); // payload length LSB (* 2 because of 2 bytes for each motor) 
+                    
+                    for (uint8_t motor = 0; motor <= MOTORS; motor++) {
+                        Serial.write(highByte(MotorOut[motor]));
+                        Serial.write(lowByte(MotorOut[motor]));
+                    }
                 }
                 
                 output_counter = 0; // reset
