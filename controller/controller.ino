@@ -13,7 +13,6 @@
 #include <Wire.h>
 #include <EEPROM.h>
 
-// Matheus add
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
@@ -32,30 +31,30 @@
 
 #ifdef PHOENIX_SHIELD_V_01
     // Led defines
-    #define LED_WHITE 2
-    #define LED_BLUE 4
+    //#define LED_WHITE 2
+    //#define LED_BLUE 4
     #define LED_ARDUINO 13
     
     // Features requested
-    #define Magnetometer
-    #define AltitudeHoldBaro
-    #define BatteryMonitorCurrent
-    #define GPS
+    //#define Magnetometer
+    //#define AltitudeHoldBaro
+    //#define BatteryMonitorCurrent
+    //#define GPS
     
     // Critical sensors on board (gyro/accel)
     #include <mpu6050_10DOF_stick_px01.h>
     
     // Magnetometer
-    #include <Magnetometer_HMC5883L.h>
+    //#include <Magnetometer_HMC5883L.h>
     
     // Barometer
-    #include <Barometer_ms5611.h>
+    //#include <Barometer_ms5611.h>
     
     // GPS (ublox neo 6m)
-    #include <GPS_ublox.h>
+    //#include <GPS_ublox.h>
     
     // Current sensor
-    #include <BatteryMonitor_current.h>
+    //#include <BatteryMonitor_current.h>
     
     // Kinematics used
     #include <kinematics_CMP.h>
@@ -179,31 +178,28 @@ const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
 
 class commands {
   public:
-   commands(byte t[4]) {
-      throttle = t[0];
-      yaw = t[1];
-      pitch = t[2];
-      roll = t[3];
+   commands(byte t[8]) {
+      throttle = t[6] | (t[7] << 8); 
+      yaw = t[2] | (t[3] << 8);
+      pitch = t[4] | (t[5] << 8);
+      roll = t[0] | (t[1] << 8);
    } 
-   commands(char t, char y, char p, char r) {
+   commands(uint16_t t, uint16_t y, uint16_t p, uint16_t r) {
     throttle = t;
     yaw = y;
     pitch = p;   
     roll = r;
    }
-  char throttle;
-  char yaw;
-  char pitch;
-  char roll;
+  uint16_t throttle;
+  uint16_t yaw;
+  uint16_t pitch;
+  uint16_t roll;
 };
-  
+
 void setup() {
     // PIN settings
-
-    //pinMode(LED_PIN, OUTPUT); // build in status LED
-    //pinMode(LED_ORIENTATION, OUTPUT); // orientation lights
     //pinMode(LED_ARDUINO, OUTPUT);
-    
+    //digitalWrite(LED_ARDUINO, HIGH);
     #ifdef LED_WHITE
         pinMode(LED_WHITE, OUTPUT);
     #endif
@@ -214,19 +210,19 @@ void setup() {
         
     // Initialize serial communication
     Serial.begin(38400); // Virtual USB Serial on teensy 3.0 is always 12 Mbit/sec (can be initialized with baud rate 0)
-    
+
     radio.begin();     
     radio.setRetries(15,15);
-
+    
     radio.setPayloadSize(sizeof(commands));
-    radio.setPALevel(RF24::RF24_PA_LOW);
+    radio.setPALevel(RF24::RF24_PA_HIGH);
     radio.setChannel(0x4c);
     
     radio.openWritingPipe(pipes[1]);
     radio.openReadingPipe(1,pipes[0]);
     
     radio.startListening();
-
+    
     #ifdef GPS
         Serial3.begin(38400);
     #endif
@@ -286,7 +282,7 @@ void setup() {
     
     // Initialize motors/receivers/sensors
     initializeESC();    
-    initializeReceiver();
+    //initializeReceiver();
     
     sensors.initializeGyro();
     sensors.initializeAccel();
@@ -372,14 +368,14 @@ void listen() {
             done = radio.read( &data, sizeof(commands) );
         }
         commands c = (commands) data;
-        //RX[0] = c.throttle;
-        //RX[1] = c.yaw;
-        //RX[2] = c.pitch;
-        //RX[3] = c.roll;
+        RX[0] = c.throttle; //data[0] | (data[1] << 8);
+        RX[1] = c.yaw; //data[4] | (data[5] << 8);
+        RX[2] = c.roll; //cdata[6] | (data[7] << 8);
+        RX[3] = c.pitch; //data[2] | (data[3] << 8);
+        RX_signalReceived = 0;
     }
 }
 void process100HzTask() {    
-    listen(); 
     sensors.evaluateGyro();
     sensors.evaluateAccel();
     
@@ -428,18 +424,12 @@ void process100HzTask() {
 }
 
 void process50HzTask() {
+    listen();    
     processPilotCommands();
     
     #ifdef AltitudeHoldBaro
         sensors.evaluateBaroAltitude();
     #endif   
-
-    // Blink LED to indicated activity
-    if ((Alive_LED_state == 51) || (Alive_LED_state == 59) || (Alive_LED_state == 67)) {
-//        digitalWrite(LED_PIN, HIGH);
-    } else {
-//        digitalWrite(LED_PIN, LOW);
-    }
 
     #ifdef LED_WHITE
         // Blink "aircraft beacon" LED
@@ -482,7 +472,7 @@ void process10HzTask() {
     
     // Blink integrated arduino LED
     Arduino_LED_state = !Arduino_LED_state;
-    digitalWrite(LED_ARDUINO, Arduino_LED_state);   
+    //digitalWrite(LED_ARDUINO, Arduino_LED_state);   
     
     // Reset Itterations
     itterations = 0;    
@@ -498,4 +488,3 @@ void process1HzTask() {
         }
     #endif
 }
-
