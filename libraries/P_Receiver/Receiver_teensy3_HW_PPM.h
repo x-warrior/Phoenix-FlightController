@@ -1,5 +1,7 @@
 /*  PPM (pulse position modulation) sampling done in hardware via FLEX timer.
 
+    Signal sampling is being done via PORTA_PCR12 (PIN 3).
+
     We are using flex timer1 which supports only 2 channels.
     This code only utilizes single edge capture which is more then enough in terms of accuracy.
 
@@ -66,7 +68,7 @@ extern "C" void ftm1_isr(void) {
         }
         ppmCounter = 0; // restart the channel counter
     } else {
-        if (ppmCounter < CHANNELS) {           // extra channels will get ignored here
+        if (ppmCounter < CHANNELS) {               // extra channels will get ignored here
             PPM_temp[ppmCounter] = pulseWidth / 3; // Store measured pulse length in us
             ppmCounter++;                          // Advance to next channel
         }
@@ -78,19 +80,18 @@ extern "C" void ftm1_isr(void) {
 void setupFTM1() {
     // FLEX Timer1 input filter configuration
     // 4+4×val clock cycles, 48MHz = 4+4*7 = 32 clock cycles = 0.75us
-    FTM1_FILTER = 0x7;
+    FTM1_FILTER = 0x07;
     
     // FLEX Timer1 configuration
-    FTM1_SC = 0x0c;    // TOF=0 TOIE=0 CPWMS=0 CLKS=01 (system clock) PS=100 (divide by 16)
-    FTM1_MOD = 0xffff; // modulo to max
+    FTM1_SC = 0x0C;    // TOF=0 TOIE=0 CPWMS=0 CLKS=01 (system clock) PS=100 (divide by 16)
+    FTM1_MOD = 0xFFFF; // modulo to max
     FTM1_C0SC = 0x44;  // CHF=0 CHIE=1 MSB=0 MSA=0 ELSB=0 ELSA=1 DMA=0
 
-    // enable interrupt in NVIC
+    // Enable FTM1 interrupt inside NVIC
     NVIC_ENABLE_IRQ(IRQ_FTM1);
     
-    // PIN configuration (teensy 3.0 pin3 = PTA12)
-    // we are using pin alternative function 3 
-    PORTA_PCR12 |= 0x300; // 0x300
+    // PIN configuration, alternative function 3
+    PORTA_PCR12 |= 0x300;
 }
 
 void initializeReceiver() {
@@ -109,11 +110,11 @@ void RX_failSafe() {
         // 1000 = 0 throttle;
         // Descending from FULL throttle 2000 (most unlikely) would take about 1 minute and 40 seconds
         // Descending from HALF throttle 1500 (more likely) would take about 50 seconds
-        RX[2] -= 2;
-        RX[4] = 2000; // force attitude mode
+        RX[CONFIG.data.CHANNEL_ASSIGNMENT[THROTTLE]] -= 2;
+        RX[CONFIG.data.CHANNEL_ASSIGNMENT[FLIGHT_MODE]] = 2000; // force attitude mode
         
-        if (RX[2] < 1000) {
-            RX[2] = 1000; // don't let the value fall below 1000
+        if (RX[CONFIG.data.CHANNEL_ASSIGNMENT[THROTTLE]] < 1000) {
+            RX[CONFIG.data.CHANNEL_ASSIGNMENT[THROTTLE]] = 1000; // don't let the value fall below 1000
             
             // at this point, we will also disarm
             armed = false;

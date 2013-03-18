@@ -48,32 +48,32 @@ void setupTimer1Esc() {
 void updateMotors() {
     cli(); // disable interrupts
     
-    #if MOTORS == 3
-        MotorOuts[0] = MotorOut[0];
-        MotorOuts[1] = MotorOut[1];
-        MotorOuts[2] = MotorOut[2];
-    #elif MOTORS == 4
-        MotorOuts[0] = MotorOut[0];
-        MotorOuts[1] = MotorOut[1];
-        MotorOuts[2] = MotorOut[2];
-        MotorOuts[3] = MotorOut[3];   
-    #elif MOTORS == 6
-        MotorOuts[0] = MotorOut[0];
-        MotorOuts[1] = MotorOut[1];
-        MotorOuts[2] = MotorOut[2];
-        MotorOuts[3] = MotorOut[3]; 
-        MotorOuts[4] = MotorOut[4];
-        MotorOuts[5] = MotorOut[5];        
-    #elif MOTORS == 8
-        MotorOuts[0] = MotorOut[0];
-        MotorOuts[1] = MotorOut[1];
-        MotorOuts[2] = MotorOut[2];
-        MotorOuts[3] = MotorOut[3]; 
-        MotorOuts[4] = MotorOut[4];
-        MotorOuts[5] = MotorOut[5]; 
-        MotorOuts[6] = MotorOut[6];
-        MotorOuts[7] = MotorOut[7];          
-    #endif
+#if MOTORS == 3
+    MotorOuts[0] = MotorOut[0];
+    MotorOuts[1] = MotorOut[1];
+    MotorOuts[2] = MotorOut[2];
+#elif MOTORS == 4
+    MotorOuts[0] = MotorOut[0];
+    MotorOuts[1] = MotorOut[1];
+    MotorOuts[2] = MotorOut[2];
+    MotorOuts[3] = MotorOut[3];   
+#elif MOTORS == 6
+    MotorOuts[0] = MotorOut[0];
+    MotorOuts[1] = MotorOut[1];
+    MotorOuts[2] = MotorOut[2];
+    MotorOuts[3] = MotorOut[3]; 
+    MotorOuts[4] = MotorOut[4];
+    MotorOuts[5] = MotorOut[5];        
+#elif MOTORS == 8
+    MotorOuts[0] = MotorOut[0];
+    MotorOuts[1] = MotorOut[1];
+    MotorOuts[2] = MotorOut[2];
+    MotorOuts[3] = MotorOut[3]; 
+    MotorOuts[4] = MotorOut[4];
+    MotorOuts[5] = MotorOut[5]; 
+    MotorOuts[6] = MotorOut[6];
+    MotorOuts[7] = MotorOut[7];          
+#endif
     
     sei(); // enable interrupts
 }
@@ -93,7 +93,7 @@ void initializeESC() {
         // Calibration sequence requested
         
         // Signal range TOP maximum
-        for (uint8_t motor = 0; motor <= MOTORS; motor++) {
+        for (uint8_t motor = 0; motor < MOTORS; motor++) {
             MotorOut[motor] = 2000;
         }
         updateMotors();
@@ -102,7 +102,7 @@ void initializeESC() {
         delay(5000);
         
         // Signal range BOTTOM minimum
-        for (uint8_t motor = 0; motor <= MOTORS; motor++) {
+        for (uint8_t motor = 0; motor < MOTORS; motor++) {
             MotorOut[motor] = 1000;
         }
         updateMotors();     
