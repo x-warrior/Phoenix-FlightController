@@ -3,7 +3,7 @@ var connection_delay = 0; // delay which defines "when" will the configurator re
 var port_list;
 var serial_poll = 0; // iterval timer refference
 
-var version = 1; // configurator version to check against version number stored in eeprom
+var version = 2; // configurator version to check against version number stored in eeprom
 
 var eepromConfigSize;
 var motors = 0;
@@ -132,22 +132,8 @@ function onOpen(openInfo) {
             serial_poll = setInterval(readPoll, 10);
             
             // request configuration data (so we have something to work with)
-            var bufferOut = new ArrayBuffer(6);
-            var bufView = new Uint8Array(bufferOut);        
-
-            // sync char 1, sync char 2, command, payload length MSB, payload length LSB, payload
-            bufView[0] = 0xB5; // sync char 1
-            bufView[1] = 0x62; // sync char 2
-            bufView[2] = 0x01; // command
-            bufView[3] = 0x00; // payload length MSB
-            bufView[4] = 0x01; // payload length LSB
-            bufView[5] = 0x01; // payload
-           
-            chrome.serial.write(connectionId, bufferOut, function(writeInfo) {
-                console.log("Wrote: " + writeInfo.bytesWritten + " bytes");
-                command_log('Requesting configuration UNION from Flight Controller');
-            }); 
-
+            requestUNION();
+            
             // request number of motors used in this setup
             var bufferOut = new ArrayBuffer(6);
             var bufView = new Uint8Array(bufferOut);
