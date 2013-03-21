@@ -172,6 +172,7 @@ void reset_PID_integrals() {
 #include "PilotCommandProcessor.h"
 #include "SerialCommunication.h"  
 
+
 RF24 radio(3,4);
 const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
 
@@ -195,6 +196,7 @@ class commands {
   uint16_t pitch;
   uint16_t roll;
 };
+
 
 void setup() {
     // PIN settings
@@ -370,7 +372,9 @@ void listen() {
         RX[1] = c.yaw; //data[4] | (data[5] << 8);
         RX[2] = c.roll; //cdata[6] | (data[7] << 8);
         RX[3] = c.pitch; //data[2] | (data[3] << 8);
+        //RX[4] = 2000;
         RX_signalReceived = 0;
+        //flightMode = ATTITUDE_MODE;
     }
 }
 void process100HzTask() {    
