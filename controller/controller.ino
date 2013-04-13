@@ -25,8 +25,8 @@
 #include "dataStorage.h"
 
 // == Hardware setup/s == 
-#define PHOENIX_SHIELD_V_01
-//#define AQ_SHIELD_V_20
+//#define PHOENIX_SHIELD_V_01
+#define AQ_SHIELD_V_20
 //#define AQ_SHIELD_V_21
 
 #ifdef PHOENIX_SHIELD_V_01
@@ -42,7 +42,7 @@
     //#define GPS
     
     // Critical sensors on board (gyro/accel)
-    #include <mpu6050_10DOF_stick_px01.h>
+    #include <mpu6050_6DOF_stick_px01.h>
     
     // Magnetometer
     //#include <Magnetometer_HMC5883L.h>
@@ -75,14 +75,14 @@
     #define LED_ARDUINO 13
     
     // Features requested
-    #define Magnetometer
+    //#define Magnetometer
     
     // Critical sensors on board (gyro/accel)
-    #include <ITG3200_AQ_v20.h>
-    #include <BMA180_AQ_v20.h>
+    #include <mpu6050_6DOF_stick_px01.h>
+
     
     // Magnetometer
-    #include <Magnetometer_HMC5883L.h>
+    //#include <Magnetometer_HMC5883L.h>
     
     // Kinematics used
     #include <kinematics_CMP.h>
@@ -173,7 +173,7 @@ void reset_PID_integrals() {
 #include "SerialCommunication.h"  
 
 
-RF24 radio(3,4);
+RF24 radio(9,10);
 const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
 
 
@@ -217,7 +217,7 @@ void setup() {
     radio.setRetries(15,15);
     
     radio.setPayloadSize(sizeof(commands));
-    radio.setPALevel(RF24::RF24_PA_HIGH);
+    radio.setPALevel(RF24_PA_HIGH);
     radio.setChannel(0x4c);
     
     radio.openWritingPipe(pipes[1]);
