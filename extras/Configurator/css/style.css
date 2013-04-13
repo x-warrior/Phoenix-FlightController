@@ -34,6 +34,8 @@ a:hover {
     padding: 0 10px 0 10px;
 }
 #port-picker {
+    float: left;
+    
     height: 22px;
     margin-bottom: 10px;
 }
@@ -96,7 +98,30 @@ a:hover {
         #port-picker a.connect.active:hover {
             background-color: #13d81d;
         }       
+#sensor-status {
+    float: right;
+    
+    height: 22px;
+    line-height: 22px;
+}
+    #sensor-status li {
+        float: left;
         
+        margin-left: 10px;
+        padding: 0 6px 0 6px;
+        
+        height: 18px;
+        line-height: 18px;
+        
+        color: white;
+        text-align: center;
+        
+        border: 1px solid #c0c0c0;
+        background-color: #be2222;
+    }
+    #sensor-status .on {
+        background-color: #0d8b13;
+    }
 #command-log {    
     margin-bottom: 10px;
     
@@ -109,6 +134,29 @@ a:hover {
 } 
     #command-log .wrapper {
         padding: 5px;
+    }
+#port-usage {
+    position: absolute;
+    
+    right: 11px;
+    margin-top: 1px;
+    
+    padding-top: 2px;
+    padding-right: 5px;
+    padding-left: 5px;
+    
+    width: 115px;
+    
+    line-height: 20px;
+    
+    border: 1px solid silver;
+    border-top: 0;
+    border-right: 0;
+    
+    background-color: #ededed;
+}
+    #port-usage span {
+        font-weight: bold;
     }
 #tabs {
     position: absolute;
@@ -608,3 +656,10 @@ table.channel_assigner {
         background-color: #ff0000;
         text-decoration: none;
     }
+.tab-about .supporters {
+    height: 200px;
+    
+    line-height: 18px;
+    text-align: center;
+    font-weight: bold;
+}    

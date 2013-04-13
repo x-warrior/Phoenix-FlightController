@@ -1,6 +1,16 @@
+#define GYROSCOPE_DETECTED      0x01
+#define ACCELEROMETER_DETECTED  0x02
+#define MAGNETOMETER_DETECTED   0x04
+#define BAROMETER_DETECTED      0x08
+
 class SensorArray {
     public:
-        SensorArray() {};
+        uint16_t sensors_detected;
+        
+        SensorArray() {
+            sensors_detected = 0x00;
+        };
+        
         void initializeGyro();
         void readGyroSum();
         void evaluateGyro();

@@ -25,12 +25,12 @@
             <div id="port-picker">
                 <ul>
                     <li class="port">
-                        <select id="port">
+                        <select id="port" title="Port">
                             <!-- port list gets generated here -->
                         </select>
                     </li>
                     <li>
-                        <select id="baud">
+                        <select id="baud" title="Baud Rate">
                             <option value="115200">115200</option>
                             <option value="57600">57600</option>
                             <option value="38400" selected="selected">38400</option>
@@ -45,7 +45,7 @@
                         </select>
                     </li>
                     <li>
-                        <select id="delay">
+                        <select id="delay" title="Timeout">
                             <option value="0">0</option>
                             <option value="1">1</option>
                             <option value="2">2</option>
@@ -64,6 +64,18 @@
                         <a class="refresh" href="#" title="">Refresh</a>                        
                     </li>
                 </ul>  
+            </div>
+            <div id="sensor-status">
+                <ul>
+                    <li class="gyro">Gyroscope</li>
+                    <li class="accel">Accelerometer</li>
+                    <li class="mag">Magnetometer</li>
+                    <li class="baro">Barometer</li>
+                </ul>
+            </div>
+            <div class="clear-both"></div>
+            <div id="port-usage">
+                Port utilization: <span class="port-usage">0 %</span>
             </div>
             <div id="command-log">
                 <div class="wrapper">

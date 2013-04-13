@@ -84,12 +84,6 @@ class MPU6050 {
             // or you can use full range / full sensitivity, which will result in the same output.
             gyroScaleFactor = radians(1000.0 / 32768.0); // 0.030517578125
             
-            // Manually defined accel bias
-            // To calculate accel bias measure maximum positive and maximum negative value for axis
-            // and then calculate average which will be used as bias
-            // accelXpositive and accelXnegative should be an average of at least 500 samples
-            // biasX = (accelXpositive + accelXnegative) / 2;
-            
             // Accel scale factor = 9.81 m/s^2 / scale
             accelScaleFactor = 9.81 / 8192.0; // 0.001197509765625
             
@@ -102,12 +96,28 @@ class MPU6050 {
             accel_bias[XAXIS] = bias0;
             accel_bias[YAXIS] = bias1;
             accel_bias[ZAXIS] = bias2;       
-        
+
             // Chip reset
             sensors.i2c_write8(MPU6050_ADDRESS, MPUREG_PWR_MGMT_1, BIT_H_RESET);
             
             // Startup delay 
             delay(100);  
+
+            // Check if sensor is alive
+            Wire.beginTransmission(MPU6050_ADDRESS);
+            Wire.write(MPUREG_WHOAMI);
+            Wire.endTransmission();
+            
+            Wire.requestFrom(MPU6050_ADDRESS, 1);
+            
+            uint8_t register_value = Wire.read();
+            
+            if (register_value == 0x68) {
+                sensors.sensors_detected |= GYROSCOPE_DETECTED;
+                sensors.sensors_detected |= ACCELEROMETER_DETECTED;
+            } else {
+                return;
+            }
             
             // Enable auxiliary I2C bus bypass
             // *NOT* Necessary for all setups, but some boards have magnetometer attached to the auxiliary I2C bus

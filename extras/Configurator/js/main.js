@@ -1,11 +1,9 @@
 var connectionId = -1;
 var connection_delay = 0; // delay which defines "when" will the configurator request configurator data after connection was established
-var port_list;
-var serial_poll = 0; // iterval timer refference
 
 var version = 2; // configurator version to check against version number stored in eeprom
-
 var eepromConfigSize;
+
 var motors = 0;
 
 $(document).ready(function() { 
@@ -28,7 +26,10 @@ $(document).ready(function() {
                     }));        
                 });
             } else {
-                $(port_picker).append('<option>NOT FOUND</option>');
+                $(port_picker).append($("<option/>", {
+                    value: 0,
+                    text: 'NOT FOUND'
+                }));
                 
                 console.log("No serial ports detected");
             }
@@ -41,39 +42,44 @@ $(document).ready(function() {
     $('div#port-picker a.connect').click(function() {
         var clicks = $(this).data('clicks');
         
-        if (clicks) { // odd number of clicks
-            stop_data_stream();
-            chrome.serial.close(connectionId, onClosed);
-            
-            clearTimeout(connection_delay);
-            clearInterval(serial_poll);
-            serial_poll = 0; // this also indicates that we are not reading anything
-            
-            $(this).text('Connect');
-            $(this).removeClass('active');            
-        } else { // even number of clicks         
-            var selected_port = String($(port_picker).val());
-            var selected_baud = parseInt(baud_picker.val());
-            connection_delay = parseInt(delay_picker.val());
-            
-            console.log('Connecting to: ' + selected_port);
-            
-            chrome.serial.open(selected_port, {
-                bitrate: selected_baud
-            }, onOpen);
-            
-            $(this).text('Disconnect');  
-            $(this).addClass('active');
-        }
+        selected_port = String($(port_picker).val());
+        selected_baud = parseInt(baud_picker.val());
+        connection_delay = parseInt(delay_picker.val());
         
-        $(this).data("clicks", !clicks);
+        if (selected_port != '0') {
+            if (clicks) { // odd number of clicks
+                stop_data_stream();
+                chrome.serial.close(connectionId, onClosed);
+                
+                clearTimeout(connection_delay);
+                clearInterval(serial_poll);
+                clearInterval(port_usage_poll);
+                
+                // Reset port usage indicator to 0
+                $('span.port-usage').html(0 + ' %');
+                
+                $(this).text('Connect');
+                $(this).removeClass('active');            
+            } else { // even number of clicks        
+                console.log('Connecting to: ' + selected_port);
+                
+                chrome.serial.open(selected_port, {
+                    bitrate: selected_baud
+                }, onOpen);
+                
+                $(this).text('Disconnect');  
+                $(this).addClass('active');
+            }
+            
+            $(this).data("clicks", !clicks);
+        }
     }); 
 
     // Tabs
     var tabs = $('#tabs > ul');
     $('a', tabs).click(function() {
         if ($(this).parent().hasClass('active') == false) { // only initialize when the tab isn't already active
-            if (connectionId < 1 || serial_poll < 1) { // if there is no active connection, return
+            if (connectionId < 1) { // if there is no active connection, return
                 command_log('You <span style="color: red;">can\'t</span> view the tabs unless you <span style="color: green">connect</span> to the flight controller.');
                 return;
             }
@@ -130,6 +136,7 @@ function onOpen(openInfo) {
         connection_delay = setTimeout(function() {
             // start polling
             serial_poll = setInterval(readPoll, 10);
+            port_usage_poll = setInterval(port_usage, 1000);
             
             // request configuration data (so we have something to work with)
             requestUNION();
@@ -141,14 +148,30 @@ function onOpen(openInfo) {
             // sync char 1, sync char 2, command, payload length MSB, payload length LSB, payload
             bufView[0] = 0xB5; // sync char 1
             bufView[1] = 0x62; // sync char 2
-            bufView[2] = 0x0B; // command // 11
+            bufView[2] = 0x0B; // command 11
             bufView[3] = 0x00; // payload length MSB
             bufView[4] = 0x01; // payload length LSB
             bufView[5] = 0x01; // payload
 
             chrome.serial.write(connectionId, bufferOut, function(writeInfo) {
                 console.log("Wrote: " + writeInfo.bytesWritten + " bytes");
-            });            
+            });
+
+            // requesting sensors detected
+            var bufferOut = new ArrayBuffer(6);
+            var bufView = new Uint8Array(bufferOut);
+            
+            // sync char 1, sync char 2, command, payload length MSB, payload length LSB, payload
+            bufView[0] = 0xB5; // sync char 1
+            bufView[1] = 0x62; // sync char 2
+            bufView[2] = 0x0C; // command // 12
+            bufView[3] = 0x00; // payload length MSB
+            bufView[4] = 0x01; // payload length LSB
+            bufView[5] = 0x01; // payload
+
+            chrome.serial.write(connectionId, bufferOut, function(writeInfo) {
+                console.log("Wrote: " + writeInfo.bytesWritten + " bytes");
+            });
         }, connection_delay * 1000);            
         
     } else {
@@ -166,6 +189,7 @@ function onClosed(result) {
         connectionId = -1; // reset connection id
         $('#content').empty(); // empty content
         $('#tabs > ul li').removeClass('active'); // de-select any selected tabs
+        sensor_status(sensors_detected = 0x00); // reset active sensor indicators
     } else { // Something went wrong
         if (connectionId > 0) {
             console.log('There was an error that happened during "connection-close" procedure.');
@@ -204,6 +228,7 @@ var message_length_expected = 0;
 var message_length_received = 0;
 var message_buffer;
 var message_buffer_uint8_view;
+var char_counter = 0;
 
 function onCharRead(readInfo) {
     if (readInfo && readInfo.bytesRead > 0 && readInfo.data) {
@@ -257,9 +282,11 @@ function onCharRead(readInfo) {
                     }
                 break;
             }
+            
+            char_counter++;
         }
     }
-};
+}
 
 function process_data() {
     switch (command) {
@@ -314,8 +341,48 @@ function process_data() {
         case 11: // Motor amount / count
             motors = parseInt(message_buffer_uint8_view[0]);
         break;
+        case 12:
+            sensors_detected = parseInt((message_buffer_uint8_view[0] << 8) | message_buffer_uint8_view[1]);
+            sensor_status(sensors_detected);            
+        break;
     }
-};
+}
+
+function sensor_status(sensors_detected) {
+    var e_sensor_status = $('div#sensor-status');
+    
+    if (bit_check(sensors_detected, 0)) { // Gyroscope detected
+        $('.gyro', e_sensor_status).addClass('on');
+    } else {
+        $('.gyro', e_sensor_status).removeClass('on');
+    }
+    
+    if (bit_check(sensors_detected, 1)) { // Accelerometer detected
+        $('.accel', e_sensor_status).addClass('on');
+    } else {
+        $('.accel', e_sensor_status).removeClass('on');
+    }
+
+    if (bit_check(sensors_detected, 2)) { // Magnetometer detected
+        $('.mag', e_sensor_status).addClass('on');
+    } else {
+        $('.mag', e_sensor_status).removeClass('on');
+    }  
+
+    if (bit_check(sensors_detected, 3)) { // Barometer detected
+        $('.baro', e_sensor_status).addClass('on');
+    } else {
+        $('.baro', e_sensor_status).removeClass('on');
+    }  
+}
+
+function port_usage() {
+    var port_usage = (char_counter * 10 / selected_baud) * 100;
+    $('span.port-usage').html(parseInt(port_usage) + ' %');
+
+    // reset counter
+    char_counter = 0;
+}
 
 function highByte(num) {
     return num >> 8;
@@ -323,4 +390,8 @@ function highByte(num) {
 
 function lowByte(num) {
     return 0x00FF & num;
+}
+
+function bit_check(num, bit) {
+    return ((num >> bit) % 2 != 0)
 }
